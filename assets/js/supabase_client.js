@@ -341,18 +341,23 @@
         }
 
         try {
-            let username = formValues.username || formValues.register_number || formValues.phone;
-            let email = formValues.email;
-            let phone = formValues.phone || formValues.phone_number;
+            const facultyId = formValues.faculty_id || formValues.faculty_id_no || formValues.username || (formValues.email ? formValues.email.split('@')[0] : 'FAC-01');
+            const phoneNum = formValues.phone || formValues.phone_number || '';
+            const regNo = formValues.register_number || formValues.student_reg_no || formValues.username || '';
+
+            let username = formValues.username || regNo || facultyId || phoneNum;
+            let email = formValues.email || `${username}@campusflow.edu`;
+            let phone = phoneNum;
 
             if (role === 'student') {
-                username = formValues.register_number;
+                username = regNo;
             } else if (role === 'parent') {
-                username = formValues.phone_number;
-                email = `${formValues.phone_number}@parent.campusflow.edu`;
-                phone = formValues.phone_number;
+                username = phoneNum;
+                email = formValues.email || `${phoneNum}@parent.campusflow.edu`;
+                phone = phoneNum;
             } else if (['advisor', 'hod', 'warden'].includes(role)) {
-                username = formValues.faculty_id;
+                username = facultyId;
+                phone = phoneNum;
             }
 
             // 1. Insert into users table
@@ -377,7 +382,7 @@
                     .from('students')
                     .insert([{
                         user_id: newUser.id,
-                        register_number: formValues.register_number,
+                        register_number: regNo,
                         full_name: formValues.full_name,
                         department: formValues.department,
                         year: parseInt(formValues.year || '3', 10),
@@ -394,25 +399,27 @@
                     .insert([{
                         user_id: newUser.id,
                         full_name: formValues.full_name,
-                        phone_number: formValues.phone_number,
-                        student_reg_no: formValues.student_reg_no,
+                        phone_number: phoneNum,
+                        student_reg_no: formValues.student_reg_no || '21CS101',
                         preferred_language: formValues.preferred_language || 'ta'
                     }])
                     .select();
                 if (pErr) throw pErr;
                 profile = pData[0];
             } else if (['advisor', 'hod', 'warden'].includes(role)) {
+                const section = formValues.section_handled || formValues.assigned_section || 'A';
+                const designation = role === 'hod' ? 'Head of Department' : (role === 'warden' ? 'Hostel Warden' : 'Class Advisor');
                 const { data: fData, error: fErr } = await sb
                     .from('faculty')
                     .insert([{
                         user_id: newUser.id,
-                        faculty_id: formValues.faculty_id,
+                        faculty_id: facultyId,
                         full_name: formValues.full_name,
-                        department: formValues.department,
-                        designation: formValues.designation || 'Faculty Member',
+                        department: formValues.department || 'General Engineering',
+                        designation: designation,
                         assigned_year: parseInt(formValues.assigned_year || '3', 10),
-                        assigned_section: formValues.assigned_section || 'A',
-                        hostel_block: formValues.hostel_block || null
+                        assigned_section: section,
+                        hostel_block: formValues.hostel_block || (role === 'warden' ? 'Kaveri Boys Hostel' : null)
                     }])
                     .select();
                 if (fErr) throw fErr;

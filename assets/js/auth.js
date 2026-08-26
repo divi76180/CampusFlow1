@@ -307,7 +307,7 @@ function renderSignupFormFields(role, container) {
                 </div>
                 <div class="form-group">
                     <label class="form-label">Faculty ID *</label>
-                    <input type="text" name="faculty_id_no" class="form-control" placeholder="e.g. FAC-CS-01" required>
+                    <input type="text" name="faculty_id" class="form-control" placeholder="e.g. FAC-CS-01" required>
                 </div>
             </div>
             <div class="form-row">
@@ -345,7 +345,7 @@ function renderSignupFormFields(role, container) {
                 </div>
                 <div class="form-group">
                     <label class="form-label">Faculty ID *</label>
-                    <input type="text" name="faculty_id_no" class="form-control" placeholder="e.g. HOD-CSE-01" required>
+                    <input type="text" name="faculty_id" class="form-control" placeholder="e.g. HOD-CSE-01" required>
                 </div>
             </div>
             <div class="form-row">
@@ -374,17 +374,17 @@ function renderSignupFormFields(role, container) {
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label">Warden Full Name *</label>
-                    <input type="text" name="full_name" class="form-control" placeholder="e.g. Col. R. Balaji" required>
+                    <input type="text" name="full_name" class="form-control" placeholder="e.g. Col. S. Balaji" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Staff / Faculty ID *</label>
-                    <input type="text" name="faculty_id_no" class="form-control" placeholder="e.g. WARDEN-BH-01" required>
+                    <label class="form-label">Faculty / Warden ID *</label>
+                    <input type="text" name="faculty_id" class="form-control" placeholder="e.g. WARDEN-BH-01" required>
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label">Email Address *</label>
-                    <input type="email" name="email" class="form-control" placeholder="warden.boys@campusflow.edu" required>
+                    <input type="email" name="email" class="form-control" placeholder="warden.bh@campusflow.edu" required>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Phone Number *</label>
@@ -392,8 +392,13 @@ function renderSignupFormFields(role, container) {
                 </div>
             </div>
             <div class="form-group">
-                <label class="form-label">Hostel Name / Block *</label>
-                <input type="text" name="hostel_name" class="form-control" placeholder="e.g. Kaveri Boys Hostel or Ganga Girls Hostel" required>
+                <label class="form-label">Hostel Block In-Charge *</label>
+                <select name="hostel_block" class="form-control form-select" required>
+                    <option value="Kaveri Boys Hostel (BH-1)">Kaveri Boys Hostel (BH-1)</option>
+                    <option value="Vaigai Boys Hostel (BH-2)">Vaigai Boys Hostel (BH-2)</option>
+                    <option value="Thamirabarani Girls Hostel (GH-1)">Thamirabarani Girls Hostel (GH-1)</option>
+                    <option value="Ganga Girls Hostel (GH-2)">Ganga Girls Hostel (GH-2)</option>
+                </select>
             </div>
         `;
     }

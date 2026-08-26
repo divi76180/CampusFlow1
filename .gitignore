@@ -25,3 +25,5 @@ yarn-error.log*
 # OS Metadata
 .DS_Store
 Thumbs.db
+
+.vercel
