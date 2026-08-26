@@ -46,19 +46,19 @@
 
     function logout() {
         sessionStorage.removeItem('campusflow_session_user');
-        window.location.href = '../login.html';
+        window.location.href = '/login.html';
     }
 
     function requireAuth(allowedRoles = []) {
         const user = getCurrentUser();
         if (!user) {
             alert('Please sign in to access your portal.');
-            window.location.href = '../login.html';
+            window.location.href = '/login.html';
             return null;
         }
         if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
             alert(`Access denied. Role '${user.role}' cannot access this portal.`);
-            window.location.href = `../${user.role}/dashboard.html`;
+            window.location.href = `/${user.role}/dashboard.html`;
             return null;
         }
         return user;
