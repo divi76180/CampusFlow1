@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Advisor Portal – CampusFlow</title>
+    <link rel="stylesheet" href="../assets/css/main.css">
+    <link rel="stylesheet" href="../assets/css/dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase_client.js"></script>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header class="main-header">
+        <div class="container nav-wrapper">
+            <a href="../index.html" class="brand-logo">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+                CampusFlow
+                <span class="brand-badge" style="background:#2563eb; color:#fff;">Class Advisor</span>
+            </a>
+
+            <div class="user-meta">
+                <span class="user-name" id="advisorDisplayName">Loading...</span>
+                <span class="meta-pill">Faculty Advisor</span>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="CampusDB.logout()">Sign Out</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <!-- Profile Banner -->
+        <div class="profile-banner" style="background: linear-gradient(135deg, #0f172a 0%, #1e40af 100%);">
+            <div class="profile-avatar" style="background: #2563eb;" id="advisorInitials">AR</div>
+            <div class="profile-details">
+                <h1 id="advisorFullName">Class Advisor Portal</h1>
+                <div class="profile-meta-row" id="advisorMetaRow">
+                    <span>Department of Computer Science & Engineering</span> &bull;
+                    <span>Class 3-A</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-toolbar">
+            <h2>Department Student Leave Requests</h2>
+            <div style="font-size: 0.85rem; color: #64748b;">
+                🟢 Green = Parent Approved | 🟡 Yellow = Parent Pending | 🔴 Red = Parent Rejected
+            </div>
+        </div>
+
+        <!-- Table Card -->
+        <div class="table-card">
+            <div class="table-responsive">
+                <table class="custom-table" id="advisorTable">
+                    <thead>
+                        <tr>
+                            <th>Student Details</th>
+                            <th>Category & Dates</th>
+                            <th>Reason & Destination</th>
+                            <th>Parent Status</th>
+                            <th>Overall Status</th>
+                            <th style="text-align: center; width: 260px;">Advisor Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="advisorTableBody">
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 2.5rem; color: #94a3b8;">
+                                Loading department records from Supabase...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal: View Leave Letter -->
+    <div class="modal-overlay" id="leaveLetterModal">
+        <div class="modal-box" style="max-width: 780px;">
+            <div class="modal-header">
+                <h3>Official Leave Application</h3>
+                <button type="button" class="modal-close" data-modal-close>&times;</button>
+            </div>
+            <div class="modal-body" id="letterheadContent"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../assets/js/dashboard.js"></script>
+    <script>
+        let currentUser = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            currentUser = CampusDB.requireAuth(['advisor']);
+            if (!currentUser) return;
+
+            const prof = currentUser.profile || {};
+            const fullName = prof.full_name || currentUser.username;
+            document.getElementById('advisorDisplayName').textContent = `${fullName} (${prof.faculty_id || currentUser.username})`;
+            document.getElementById('advisorFullName').textContent = fullName;
+            document.getElementById('advisorInitials').textContent = fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            document.getElementById('advisorMetaRow').innerHTML = `
+                <span><strong>Faculty ID:</strong> ${prof.faculty_id || 'FAC-CS-01'}</span> &bull;
+                <span><strong>Designation:</strong> ${prof.designation || 'Class Advisor'}</span> &bull;
+                <span><strong>Dept:</strong> ${prof.department || 'CSE'}</span>
+            `;
+
+            await loadAdvisorLeaves();
+        });
+
+        async function loadAdvisorLeaves() {
+            const leaves = await CampusDB.getAllLeaves();
+            const tbody = document.getElementById('advisorTableBody');
+
+            if (leaves.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:3rem; color:#94a3b8;">No student leave applications found in Supabase.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            leaves.forEach(l => {
+                const st = l.status;
+                const isReady = (st.includes('Parent Approved') || l.current_stage === 'advisor');
+                const isParentApproved = st.includes('Parent Approved') || st.includes('Advisor Approved') || st.includes('Waiting for Warden') || st.includes('Completed');
+
+                let rowClass = 'row-parent-pending';
+                let parentBadge = '<span class="status-badge status-yellow">⏳ Pending</span>';
+
+                if (isParentApproved) {
+                    rowClass = 'row-parent-approved';
+                    parentBadge = '<span class="status-badge status-green">✓ Approved (Voice)</span>';
+                } else if (st.includes('Rejected')) {
+                    rowClass = 'row-parent-rejected';
+                    parentBadge = '<span class="status-badge status-red">✗ Rejected</span>';
+                }
+
+                const stdName = l.students?.full_name || 'Student';
+                const regNo = l.students?.register_number || 'N/A';
+                const dept = l.students?.department || 'CSE';
+                const yr = l.students?.year || 3;
+                const sec = l.students?.section || 'A';
+
+                html += `
+                    <tr class="${rowClass}">
+                        <td>
+                            <strong>${escapeHtml(stdName)}</strong><br>
+                            <span style="font-size:0.8rem; color:#64748b;">${escapeHtml(regNo)} (${dept} ${yr}-${sec})</span>
+                        </td>
+                        <td>
+                            <span style="font-weight:600; color:#1e40af;">${escapeHtml(l.leave_type)}</span><br>
+                            <span style="font-size:0.8rem; color:#64748b;">${new Date(l.from_date).toLocaleDateString('en-GB', {day:'numeric', month:'short'})} - ${new Date(l.to_date).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'})}</span>
+                        </td>
+                        <td style="max-width:200px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
+                            <strong>${escapeHtml(l.reason)}</strong><br>
+                            <span style="font-size:0.8rem; color:#64748b;">To: ${escapeHtml(l.destination_address)}</span>
+                        </td>
+                        <td>${parentBadge}</td>
+                        <td>
+                            <span class="status-badge ${getStatusClass(st)}">
+                                ${escapeHtml(st)}
+                            </span>
+                        </td>
+                        <td style="text-align:center;">
+                            <div style="display:inline-flex; gap:0.35rem; flex-wrap:wrap; justify-content:center;">
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="viewLeaveLetterDirect(${l.id})">
+                                    📄 View
+                                </button>
+                                ${isReady ? `
+                                    <button type="button" class="btn btn-success btn-sm" onclick="handleAdvisorAction(${l.id}, 'approved')">
+                                        ✓ Forward to HOD
+                                    </button>
+                                    <button type="button" class="btn btn-danger btn-sm" onclick="handleAdvisorAction(${l.id}, 'rejected')">
+                                        ✗ Reject
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        async function handleAdvisorAction(leaveId, action) {
+            const remarks = prompt(`Enter remarks for ${action.toUpperCase()}:`, action === 'approved' ? 'Class Advisor sanctioned.' : 'Attendance shortage.');
+            if (remarks === null) return;
+
+            const res = await CampusDB.submitFacultyApproval(leaveId, 'advisor', action, remarks, currentUser);
+            if (res.success) {
+                alert(res.message);
+                await loadAdvisorLeaves();
+            } else {
+                alert('Error: ' + res.message);
+            }
+        }
+
+        async function viewLeaveLetterDirect(leaveId) {
+            const data = await CampusDB.getLeaveDetails(leaveId);
+            if (!data) return;
+            renderLeaveLetterModal(data);
+            openModal('leaveLetterModal');
+        }
+    </script>
+</body>
+</html>
