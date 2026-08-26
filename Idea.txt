@@ -1,0 +1,513 @@
+Build a complete, functional web application called **CampusFlow – Digital Leave Approval Portal**. Follow the requirements below exactly. Do not add unnecessary features or change the approval workflow.
+
+## 1. Landing / Index Page
+
+Create a professional landing page for CampusFlow with:
+
+* CampusFlow logo/name
+* Short description of the Digital Leave Approval Portal
+* **Sign Up** button
+* **Login** button
+
+Navigation:
+
+**Index → Sign Up**
+**Index → Login**
+
+---
+
+## 2. Role-Based Signup
+
+The Signup page must dynamically change its form according to the selected role.
+
+Available roles:
+
+* Student
+* Parent
+* Class Advisor
+* HOD
+* Warden
+
+### Student Signup
+
+Collect appropriate student details such as:
+
+* Student name
+* Student ID / Register number
+* Email
+* Phone number
+* Password
+* Department
+* Year
+* Section
+* Hostel status: Hosteller / Day Scholar
+* Parent details / Parent ID
+
+### Parent Signup
+
+For parents, **email is optional**.
+
+The parent must be able to register using **either email OR phone number**.
+
+Collect:
+
+* Parent name
+* Email (optional)
+* Phone number
+* Password
+* Student ID / Register number of their child
+* Preferred language
+* Voice sample for voice verification
+
+The system must ensure that the parent is correctly linked to their student.
+
+### Class Advisor Signup
+
+Collect:
+
+* Name
+* Faculty ID
+* Email
+* Phone number
+* Password
+* Department
+* Class / Section handled
+
+### HOD Signup
+
+Collect:
+
+* Name
+* Faculty ID
+* Email
+* Phone number
+* Password
+* Department
+
+### Warden Signup
+
+Collect:
+
+* Name
+* Faculty ID
+* Email
+* Phone number
+* Password
+* Hostel details
+
+Store all signup information in the MySQL database.
+
+---
+
+## 3. Login System
+
+Create a common Login page.
+
+The user enters their login credentials and selects or is identified by their role.
+
+After successful authentication, redirect the user automatically to the correct dashboard.
+
+The dashboard must display information retrieved from the database for the **currently logged-in user**.
+
+The routing must work as follows:
+
+**Student → Student Dashboard**
+
+**Parent → Parent Dashboard**
+
+**Class Advisor → Advisor Dashboard**
+
+**HOD → HOD Dashboard**
+
+**Warden → Warden Dashboard**
+
+Do not hard-code user information.
+
+Use secure authentication and password hashing.
+
+---
+
+# 4. Student Dashboard
+
+The Student Dashboard should display the logged-in student's database information.
+
+Show:
+
+* Student name
+* Student ID
+* Department
+* Year
+* Section
+* Hostel status
+* Parent information
+* Leave request history
+* Current leave request status
+
+Provide an **Apply for Leave** option.
+
+---
+
+# 5. Student Leave Request
+
+Create a leave application form containing:
+
+* Student information
+* Leave type
+* From date
+* To date
+* Reason for leave
+* Destination / address
+* Any other required leave information
+
+When the student submits the leave letter/request:
+
+**Student → Parent**
+
+The request must be stored in the database and associated with the correct student and parent.
+
+The parent should receive the student's leave request in their dashboard.
+
+---
+
+# 6. Parent Dashboard
+
+The Parent Dashboard should display the child/student associated with that parent.
+
+Show:
+
+* Student name
+* Student ID
+* Leave request
+* Leave dates
+* Reason
+* Current approval status
+
+The parent must be able to open and read the complete leave letter.
+
+---
+
+# 7. Voice Reading for Parents
+
+If the parent cannot read the leave letter, provide a clearly visible:
+
+**🔊 Listen to Letter**
+
+button.
+
+When the parent presses the button, the system should convert the leave letter into speech and read it aloud.
+
+The language used for speech must be based on the **preferred language stored for that parent** during signup.
+
+The system should support multiple appropriate Indian languages.
+
+---
+
+# 8. Parent Voice Approval
+
+The parent must approve the leave request using a voice recording.
+
+During parent registration, store a voice sample associated with the parent's account.
+
+When approving a leave:
+
+1. Parent opens the leave request.
+2. Parent presses the **Voice Approval** button.
+3. Parent records their approval.
+4. The recorded voice is compared with the previously stored voice sample.
+5. If the voice verification succeeds, the parent approval is accepted.
+6. If verification fails, the approval must not be accepted and the parent should be asked to try again.
+
+Store the verification result and approval information in the database.
+
+The system must never automatically approve a request without successful parent verification.
+
+---
+
+# 9. Advisor Dashboard
+
+The Class Advisor Dashboard must display the leave requests belonging to the students handled by that advisor.
+
+Show:
+
+* Student name
+* Student ID
+* Leave dates
+* Leave reason
+* Parent approval status
+* Advisor approval status
+* Current stage
+
+### Important Requirement
+
+**Leave requests approved by the parent must be clearly highlighted.**
+
+For example:
+
+* Parent Approved → Green highlighted status
+* Parent Pending → Yellow highlighted status
+* Parent Rejected → Red highlighted status
+
+The advisor should be able to open the complete request and approve or reject it.
+
+Only requests that have successfully received parent approval should proceed to the Class Advisor approval stage.
+
+---
+
+# 10. Advisor Approval → HOD
+
+When the Class Advisor approves a leave request:
+
+**Student → Parent → Class Advisor → HOD**
+
+The request must automatically become available in the appropriate HOD's dashboard.
+
+The HOD should only see requests that have been approved by the Class Advisor.
+
+---
+
+# 11. HOD Dashboard
+
+The HOD Dashboard should display leave requests forwarded by Class Advisors belonging to that department.
+
+Show:
+
+* Student details
+* Leave details
+* Parent approval
+* Advisor approval
+* Current status
+
+The HOD can:
+
+* Approve
+* Reject
+
+If the HOD rejects the request, the workflow stops and the status should clearly show that the request was rejected by the HOD.
+
+If the HOD approves it, check the student's hostel status.
+
+---
+
+# 12. Hosteller / Day Scholar Logic
+
+After HOD approval:
+
+### If the student is a Hosteller:
+
+The request must be sent to:
+
+**Warden**
+
+Workflow:
+
+**Student → Parent → Class Advisor → HOD → Warden**
+
+### If the student is a Day Scholar:
+
+The Warden stage must be skipped.
+
+Workflow:
+
+**Student → Parent → Class Advisor → HOD → Completed**
+
+This decision must be based on the student's **hostel status stored in the database**, not a manually selected option during approval.
+
+---
+
+# 13. Warden Dashboard
+
+The Warden Dashboard should display only the leave requests of students who are **Hostellers** and whose requests have already been approved by:
+
+* Parent
+* Class Advisor
+* HOD
+
+The Warden can:
+
+* View the complete leave request
+* Approve
+* Reject
+
+After Warden approval:
+
+**Leave Request → Completed**
+
+---
+
+# 14. Complete Approval Workflow
+
+Implement exactly this workflow:
+
+```text
+Student submits leave
+        ↓
+Parent receives request
+        ↓
+Parent reads / listens to request
+        ↓
+Parent voice verification
+        ↓
+Parent approves
+        ↓
+Class Advisor receives request
+        ↓
+Class Advisor approves
+        ↓
+HOD receives request
+        ↓
+HOD approves
+        ↓
+Check hostel status
+        ↓
+ ┌───────────────┬────────────────┐
+ │               │                │
+Hosteller     Day Scholar        │
+ │               │                │
+ ↓               ↓                │
+Warden        Completed           │
+ │                                │
+ ↓                                │
+Completed                          │
+```
+
+At every stage, maintain the current approval status in the database.
+
+---
+
+# 15. Database
+
+Use **MySQL**.
+
+Create a properly structured database for CampusFlow containing suitable tables such as:
+
+* `users`
+* `students`
+* `parents`
+* `faculty`
+* `leave_requests`
+* `approvals`
+* `voice_samples`
+* `voice_verifications`
+* `notifications`
+
+Establish the necessary relationships between users, students, parents, faculty members, leave requests, and approvals.
+
+The system must retrieve the correct student, parent, advisor, HOD, and warden based on their database relationships.
+
+---
+
+# 16. Leave Status System
+
+Every leave request should have a clear status such as:
+
+* Submitted
+* Waiting for Parent
+* Parent Approved
+* Parent Rejected
+* Waiting for Class Advisor
+* Advisor Approved
+* Advisor Rejected
+* Waiting for HOD
+* HOD Approved
+* HOD Rejected
+* Waiting for Warden
+* Warden Approved
+* Warden Rejected
+* Completed
+
+The status should update automatically after each approval or rejection.
+
+---
+
+# 17. Technical Requirements
+
+Build the application using:
+
+**Frontend:**
+
+* HTML
+* CSS
+* JavaScript
+
+**Backend:**
+
+* PHP
+
+**Database:**
+
+* MySQL
+
+Use sessions for login authentication.
+
+Use secure password hashing.
+
+Use prepared SQL statements to prevent SQL injection.
+
+Keep the code modular and organized.
+
+Suggested structure:
+
+```text
+CampusFlow/
+│
+├── index.html
+├── signup.html
+├── login.html
+│
+├── student/
+│   └── dashboard.php
+│
+├── parent/
+│   └── dashboard.php
+│
+├── advisor/
+│   └── dashboard.php
+│
+├── hod/
+│   └── dashboard.php
+│
+├── warden/
+│   └── dashboard.php
+│
+├── backend/
+│   ├── db.php
+│   ├── signup.php
+│   ├── login.php
+│   ├── leave_request.php
+│   ├── parent_approval.php
+│   ├── advisor_approval.php
+│   ├── hod_approval.php
+│   └── warden_approval.php
+│
+├── assets/
+│   ├── css/
+│   ├── js/
+│   └── images/
+│
+└── database/
+    └── campusflow.sql
+```
+
+---
+
+# 18. UI Design
+
+Create a professional, modern college-management interface.
+
+Use:
+
+* Clean dashboard cards
+* Blue/navy-based professional theme
+* White backgrounds
+* Rounded cards
+* Clear typography
+* Simple icons
+* Status badges
+* Responsive design
+* Mobile-friendly layouts
+
+Each role should have a dashboard specifically designed for its responsibilities.
+
+The most important goal is that **CampusFlow should function as a real digital leave approval system**, with database-driven role-based login and the exact approval workflow described above.
+
+Do not replace the voice-based parent verification with a simple button. Do not skip the parent approval stage. Do not send requests to the next role until the previous required approval has been completed.

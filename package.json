@@ -1,0 +1,27 @@
+{
+  "name": "campusflow-portal",
+  "version": "2.0.0",
+  "description": "CampusFlow – Digital Leave Approval Portal with Multilingual Parent Voice Verification & QR Outpass Clearance",
+  "main": "index.html",
+  "scripts": {
+    "dev": "serve -s . -l 8080",
+    "start": "serve -s . -l 8080",
+    "deploy": "npx vercel --prod"
+  },
+  "keywords": [
+    "campusflow",
+    "student-portal",
+    "leave-approval",
+    "voice-biometrics",
+    "supabase",
+    "qr-outpass"
+  ],
+  "author": "CampusFlow Team",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  },
+  "devDependencies": {
+    "serve": "^14.2.4"
+  }
+}

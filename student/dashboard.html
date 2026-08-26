@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Portal – CampusFlow</title>
+    <link rel="stylesheet" href="../assets/css/main.css">
+    <link rel="stylesheet" href="../assets/css/dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase_client.js"></script>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header class="main-header">
+        <div class="container nav-wrapper">
+            <a href="../index.html" class="brand-logo">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+                    <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+                </svg>
+                CampusFlow
+                <span class="brand-badge" style="background:#059669; color:#fff;">Student Portal</span>
+            </a>
+
+            <div class="user-meta">
+                <span class="user-name" id="userDisplayName">Loading...</span>
+                <span class="meta-pill" style="text-transform: capitalize;" id="userHostelPill">Hosteller</span>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="CampusDB.logout()">Sign Out</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <!-- Welcome Banner -->
+        <div class="profile-banner-card">
+            <div class="profile-banner-grid">
+                <div class="profile-main-details">
+                    <h1 id="userFullName">Student Portal</h1>
+                    <div class="profile-meta-tags" id="userMetaRow">
+                        <span class="meta-pill">Department of Computer Science & Engineering</span>
+                    </div>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-primary btn-lg" onclick="openModal('applyLeaveModal')" style="background: #ffffff; color: #1e40af; font-weight: 700; box-shadow: 0 4px 14px rgba(0,0,0,0.25); border: none; font-size: 1.05rem; padding: 0.85rem 1.6rem; cursor: pointer;">
+                        ➕ Apply for Leave
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats Cards -->
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-blue">📄</div>
+                <div class="stat-content">
+                    <h3 id="statTotalLeaves">0</h3>
+                    <p>Total Applications</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-yellow">⏳</div>
+                <div class="stat-content">
+                    <h3 id="statPendingLeaves">0</h3>
+                    <p>Under Verification</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-green">✅</div>
+                <div class="stat-content">
+                    <h3 id="statApprovedLeaves">0</h3>
+                    <p>Approved / Outpasses</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Outpass Banner (shown if hosteller has an active approved pass) -->
+        <div id="activeOutpassBanner" style="display: none; background: linear-gradient(135deg, #059669 0%, #1e40af 100%); color: #fff; padding: 1.25rem 1.5rem; border-radius: var(--radius-lg); margin-bottom: 1.5rem; justify-content: space-between; align-items: center; box-shadow: var(--shadow-md);">
+            <div>
+                <h3 style="font-size: 1.15rem; margin-bottom: 0.2rem;">🎫 Active Digital Hostel Outpass Ready</h3>
+                <p style="font-size: 0.85rem; color: #e0e7ff;">Your gate pass has been cleared by the Warden. Click to view scannable QR Code.</p>
+            </div>
+            <button type="button" class="btn btn-primary" id="btnActiveOutpassModal" style="background:#fff; color:#1e40af; font-weight:700;">
+                View QR Outpass →
+            </button>
+        </div>
+
+        <!-- Section Toolbar -->
+        <div class="section-toolbar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <h2>My Leave Applications</h2>
+            <button type="button" class="btn btn-primary" onclick="openModal('applyLeaveModal')" style="box-shadow: 0 2px 8px rgba(37,99,235,0.3); font-weight: 600;">
+                ➕ Apply for Leave
+            </button>
+        </div>
+
+        <!-- Leaves Table Container -->
+        <div class="table-card">
+            <div class="table-responsive">
+                <table class="custom-table" id="leavesTable">
+                    <thead>
+                        <tr>
+                            <th>Ref #</th>
+                            <th>Category</th>
+                            <th>Duration</th>
+                            <th>Reason</th>
+                            <th>Destination</th>
+                            <th>Current Status</th>
+                            <th style="text-align: center;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leavesTableBody">
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 2rem; color: #94a3b8;">
+                                Loading records from Supabase...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: Apply for Leave -->
+    <div class="modal-overlay" id="applyLeaveModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Submit Leave Application</h3>
+                <button type="button" class="modal-close" data-modal-close>&times;</button>
+            </div>
+            <form id="applyLeaveForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Leave Category *</label>
+                        <select name="leave_type" class="form-control form-select" required>
+                            <option value="Casual / Home Visit">Casual / Home Visit</option>
+                            <option value="Medical Leave">Medical Leave</option>
+                            <option value="On-Duty (OD)">On-Duty (OD / Technical Symposium)</option>
+                            <option value="Emergency Leave">Emergency Leave</option>
+                            <option value="Hostel Outpass">Hostel Weekend Outpass</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">From Date *</label>
+                            <input type="date" name="from_date" id="inputFromDate" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">To Date *</label>
+                            <input type="date" name="to_date" id="inputToDate" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Departure Time</label>
+                            <input type="time" name="from_time" class="form-control" value="08:00">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Expected Return Time</label>
+                            <input type="time" name="to_time" class="form-control" value="18:00">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Detailed Reason for Leave *</label>
+                        <textarea name="reason" rows="3" class="form-control" placeholder="Provide full justification for leave..." required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Destination Address during Leave *</label>
+                        <input type="text" name="destination_address" class="form-control" placeholder="Full residential address during leave" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Emergency Phone Number</label>
+                        <input type="tel" name="emergency_contact" id="inputEmergencyContact" class="form-control">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit to Parent for Approval →</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: View Leave Letter & Timeline -->
+    <div class="modal-overlay" id="leaveLetterModal">
+        <div class="modal-box" style="max-width: 780px;">
+            <div class="modal-header">
+                <h3>Official Leave Application</h3>
+                <button type="button" class="modal-close" data-modal-close>&times;</button>
+            </div>
+            <div class="modal-body" id="letterheadContent"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Digital Hostel Outpass with QR Code -->
+    <div class="modal-overlay" id="hostelOutpassModal">
+        <div class="modal-box" style="max-width: 720px;">
+            <div class="modal-header">
+                <h3>🎫 Hostel Digital Outpass & Gate Pass</h3>
+                <button type="button" class="modal-close" data-modal-close>&times;</button>
+            </div>
+            <div class="modal-body" id="outpassModalContent"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="window.print()">
+                    🖨️ Print / Download Gate Pass
+                </button>
+                <button type="button" class="btn btn-secondary" data-modal-close>Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../assets/js/qrcode.js"></script>
+    <script src="../assets/js/tts.js"></script>
+    <script src="../assets/js/dashboard.js"></script>
+    <script>
+        let currentUser = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            currentUser = CampusDB.requireAuth(['student']);
+            if (!currentUser) return;
+
+            // Render Profile info
+            const prof = currentUser.profile || {};
+            const fullName = prof.full_name || currentUser.username;
+            document.getElementById('userDisplayName').textContent = `${fullName} (${prof.register_number || currentUser.username})`;
+            document.getElementById('userFullName').textContent = fullName;
+            document.getElementById('userInitials').textContent = fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            document.getElementById('userHostelPill').textContent = (prof.hostel_status || 'day_scholar').replace('_', ' ');
+
+            document.getElementById('userMetaRow').innerHTML = `
+                <span><strong>Register No:</strong> ${prof.register_number || 'N/A'}</span> &bull;
+                <span><strong>Dept:</strong> ${prof.department || 'Engineering'} (${prof.year || 3}-${prof.section || 'A'})</span> &bull;
+                <span><strong>Hostel:</strong> ${prof.hostel_status === 'hosteller' ? (prof.room_number || 'Room BH-304') : 'Day Scholar'}</span>
+            `;
+
+            // Default dates
+            const tmrw = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+            const endd = new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0];
+            document.getElementById('inputFromDate').value = tmrw;
+            document.getElementById('inputToDate').value = endd;
+            document.getElementById('inputEmergencyContact').value = currentUser.phone || '';
+
+            await loadLeaves();
+        });
+
+        async function loadLeaves() {
+            const studentId = currentUser.profile?.id || 1;
+            const leaves = await CampusDB.getStudentLeaves(studentId);
+
+            document.getElementById('statTotalLeaves').textContent = leaves.length;
+            const pending = leaves.filter(l => !l.status.toLowerCase().includes('completed') && !l.status.toLowerCase().includes('rejected')).length;
+            const approved = leaves.filter(l => l.status.toLowerCase().includes('completed')).length;
+            document.getElementById('statPendingLeaves').textContent = pending;
+            document.getElementById('statApprovedLeaves').textContent = approved;
+
+            const tbody = document.getElementById('leavesTableBody');
+            if (leaves.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align:center; padding:3.5rem 1.5rem;">
+                            <div style="font-size: 2.8rem; margin-bottom: 0.5rem;">📝</div>
+                            <h3 style="font-size: 1.25rem; color: #1e293b; margin-bottom: 0.4rem;">No Leave Applications Yet</h3>
+                            <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1.25rem;">Submit your first leave request to initiate the automated approval flow.</p>
+                            <button type="button" class="btn btn-primary btn-lg" onclick="openModal('applyLeaveModal')" style="box-shadow: 0 4px 12px rgba(37,99,235,0.3); font-weight:700;">
+                                ➕ Apply for Leave Now
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            let html = '';
+            let activeOutpassId = null;
+
+            leaves.forEach(l => {
+                const isCompleted = l.status.toLowerCase().includes('completed');
+                const isHosteller = currentUser.profile?.hostel_status === 'hosteller';
+
+                if (isCompleted && isHosteller && !activeOutpassId) {
+                    activeOutpassId = l.id;
+                }
+
+                html += `
+                    <tr>
+                        <td><strong>#LR-${l.id}</strong></td>
+                        <td><span style="font-weight:600; color:#1e40af;">${escapeHtml(l.leave_type)}</span></td>
+                        <td>${new Date(l.from_date).toLocaleDateString('en-GB', {day:'numeric', month:'short'})} - ${new Date(l.to_date).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'})}</td>
+                        <td style="max-width:200px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${escapeHtml(l.reason)}</td>
+                        <td>${escapeHtml(l.destination_address)}</td>
+                        <td>
+                            <span class="status-badge ${getStatusClass(l.status)}">
+                                ${escapeHtml(l.status)}
+                            </span>
+                        </td>
+                        <td style="text-align:center;">
+                            <div style="display:inline-flex; gap:0.4rem; flex-wrap:wrap; justify-content:center;">
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="viewLeaveLetterDirect(${l.id})">
+                                    📄 View Letter
+                                </button>
+                                ${isCompleted && isHosteller ? `
+                                    <button type="button" class="btn btn-success btn-sm" onclick="viewHostelOutpassDirect(${l.id})">
+                                        🎫 QR Outpass
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+
+            if (activeOutpassId) {
+                const banner = document.getElementById('activeOutpassBanner');
+                banner.style.display = 'flex';
+                document.getElementById('btnActiveOutpassModal').onclick = () => viewHostelOutpassDirect(activeOutpassId);
+            }
+        }
+
+        // Apply Form Handler
+        document.getElementById('applyLeaveForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'Submitting to Supabase...';
+
+            const formData = {
+                student_id: currentUser.profile?.id || 1,
+                leave_type: e.target.leave_type.value,
+                from_date: e.target.from_date.value,
+                to_date: e.target.to_date.value,
+                from_time: e.target.from_time.value,
+                to_time: e.target.to_time.value,
+                reason: e.target.reason.value,
+                destination_address: e.target.destination_address.value,
+                emergency_contact: e.target.emergency_contact.value
+            };
+
+            const res = await CampusDB.submitLeaveRequest(formData);
+            if (res.success) {
+                alert('✅ Leave application successfully recorded in Supabase!');
+                closeModal('applyLeaveModal');
+                e.target.reset();
+                await loadLeaves();
+            } else {
+                alert('Error: ' + res.message);
+            }
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Submit to Parent for Approval →';
+        });
+
+        async function viewLeaveLetterDirect(leaveId) {
+            const data = await CampusDB.getLeaveDetails(leaveId);
+            if (!data) { alert('Could not load leave details.'); return; }
+            renderLeaveLetterModal(data);
+            openModal('leaveLetterModal');
+        }
+
+        async function viewHostelOutpassDirect(leaveId) {
+            const data = await CampusDB.getLeaveDetails(leaveId);
+            if (!data) { alert('Could not load outpass details.'); return; }
+            renderHostelOutpassModal(data);
+            openModal('hostelOutpassModal');
+        }
+    </script>
+</body>
+</html>

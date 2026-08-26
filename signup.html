@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account – CampusFlow Portal</title>
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/auth.css">
+</head>
+<body style="background: #f1f5f9;">
+
+    <!-- Navigation Header -->
+    <header class="main-header">
+        <div class="container nav-wrapper">
+            <a href="index.html" class="brand-logo">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    <polyline points="10 8 14 12 10 16"></polyline>
+                </svg>
+                CampusFlow
+            </a>
+            <div class="nav-actions">
+                <span style="color: #64748b; font-size: 0.9rem;">Already registered?</span>
+                <a href="login.html" class="btn btn-secondary btn-sm">Sign In</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Signup Form Card Container -->
+    <main class="auth-page">
+        <div class="auth-card auth-card-wide">
+            <div class="auth-header">
+                <h1>Create Your Account</h1>
+                <p>Select your institutional role to customize your registration form.</p>
+            </div>
+
+            <!-- Dynamic Role Switcher Tabs -->
+            <div class="role-tabs" role="tablist">
+                <button type="button" class="role-tab-btn active" data-role="student">
+                    <span>🎓</span>
+                    <span>Student</span>
+                </button>
+                <button type="button" class="role-tab-btn" data-role="parent">
+                    <span>👨‍👩‍👧</span>
+                    <span>Parent</span>
+                </button>
+                <button type="button" class="role-tab-btn" data-role="advisor">
+                    <span>📋</span>
+                    <span>Class Advisor</span>
+                </button>
+                <button type="button" class="role-tab-btn" data-role="hod">
+                    <span>🏛️</span>
+                    <span>HOD</span>
+                </button>
+                <button type="button" class="role-tab-btn" data-role="warden">
+                    <span>🏢</span>
+                    <span>Warden</span>
+                </button>
+            </div>
+
+            <div id="authAlert" class="alert" style="display: none;"></div>
+
+            <!-- Main Signup Form -->
+            <form id="signupForm" autocomplete="off">
+                <input type="hidden" name="role" id="selectedRoleInput" value="student">
+
+                <!-- Dynamic fields container populated by auth.js -->
+                <div id="dynamicRoleFields"></div>
+
+                <!-- Password Row -->
+                <div class="form-row" style="margin-top: 1rem;">
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label class="form-label">Password *</label>
+                        <input type="password" name="password" class="form-control" placeholder="Minimum 6 characters" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg btn-block" style="margin-top: 1.5rem;">
+                    Create Account →
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/supabase_client.js"></script>
+    <script src="assets/js/voice_verify.js"></script>
+    <script src="assets/js/auth.js"></script>
+</body>
+</html>

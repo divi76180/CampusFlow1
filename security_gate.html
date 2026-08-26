@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Security Gate – Outpass QR Scanner & Verification</title>
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/dashboard.css">
+    <style>
+        .gate-scanner-box {
+            max-width: 650px;
+            margin: 3rem auto;
+            background: #ffffff;
+            border: 2px solid #1e3a8a;
+            border-radius: var(--radius-lg);
+            padding: 2.25rem;
+            box-shadow: var(--shadow-xl);
+        }
+        .gate-title {
+            text-align: center;
+            margin-bottom: 1.75rem;
+        }
+        .gate-title h1 {
+            font-size: 1.75rem;
+            color: #0f172a;
+        }
+        .scanner-input-group {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        .result-verified {
+            background: #ecfdf5;
+            border: 2px solid #059669;
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+        .result-invalid {
+            background: #fef2f2;
+            border: 2px solid #dc2626;
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+    </style>
+</head>
+<body style="background: #0f172a; color: #f8fafc; min-height: 100vh;">
+
+    <header class="main-header" style="background: #1e293b; border-color: #334155;">
+        <div class="container nav-wrapper">
+            <a href="index.html" class="brand-logo" style="color:#fff;">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+                CampusFlow Gate Security
+                <span class="brand-badge" style="background:#059669; color:#fff;">Main Gate Scanner</span>
+            </a>
+            <div class="nav-actions">
+                <a href="login.html" class="btn btn-secondary btn-sm" style="background:#0f172a; color:#fff; border-color:#475569;">Back to Portal</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="gate-scanner-box">
+            <div class="gate-title">
+                <h1>🛡️ Gate Pass QR Verification</h1>
+                <p style="color: #64748b; font-size: 0.95rem;">Enter Outpass ID or scan QR token to verify Hosteller exit/entry authorization.</p>
+            </div>
+
+            <div class="scanner-input-group">
+                <input type="text" id="passIdInput" class="form-control" placeholder="Enter Outpass ID (e.g. 1 or 2)" value="1">
+                <button type="button" class="btn btn-primary" onclick="verifyOutpass()">Verify Outpass →</button>
+            </div>
+
+            <div id="scanResultContainer"></div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/supabase_client.js"></script>
+    <script src="assets/js/qrcode.js"></script>
+    <script>
+        async function verifyOutpass() {
+            let passId = document.getElementById('passIdInput').value.trim();
+            passId = parseInt(passId.replace(/[^0-9]/g, ''), 10);
+            const container = document.getElementById('scanResultContainer');
+
+            if (!passId) {
+                container.innerHTML = `<div class="result-invalid"><h3 style="color:#dc2626;">Invalid Input</h3><p>Please enter a numeric Outpass ID.</p></div>`;
+                return;
+            }
+
+            container.innerHTML = '<div style="text-align:center; padding:1rem; color:#64748b;">🔍 Querying Supabase cloud database...</div>';
+
+            try {
+                let leave = null;
+                if (window.CampusDB) {
+                    const data = await window.CampusDB.getLeaveDetails(passId);
+                    if (data && data.leave) {
+                        leave = data.leave;
+                    }
+                }
+
+                if (!leave) {
+                    const res = await fetch(`backend/leave_request.php?action=get_leave_details&id=${passId}`);
+                    const data = await res.json();
+                    if (data.success && data.leave) {
+                        leave = data.leave;
+                    }
+                }
+
+                if (!leave) {
+                    container.innerHTML = `
+                        <div class="result-invalid">
+                            <div style="font-size:2.5rem; margin-bottom:0.5rem;">❌</div>
+                            <h2 style="color:#dc2626; margin-bottom:0.4rem;">INVALID OUTPASS</h2>
+                            <p style="color:#7f1d1d;">No record found for Outpass #${passId} in Supabase. Do NOT permit exit.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const isCompleted = leave.status.toLowerCase().includes('completed') || leave.status.toLowerCase().includes('warden approved');
+
+                if (isCompleted) {
+                    container.innerHTML = `
+                        <div class="result-verified">
+                            <div style="font-size:2.5rem; margin-bottom:0.25rem;">✅</div>
+                            <h2 style="color:#059669; margin-bottom:0.25rem;">PASS AUTHORIZED & ACTIVE</h2>
+                            <div style="font-size:0.85rem; color:#065f46; margin-bottom:1rem; font-weight:700;">PERMIT HOSTELLER GATE EXIT / ENTRY</div>
+
+                            <div style="background:#fff; border:1px solid #a7f3d0; border-radius:8px; padding:1rem; text-align:left; font-size:0.9rem; color:#0f172a;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem;">
+                                    <strong>Hosteller Name:</strong>
+                                    <span>${leave.student_name}</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem;">
+                                    <strong>Register Number:</strong>
+                                    <span><strong>${leave.register_number}</strong></span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem;">
+                                    <strong>Department:</strong>
+                                    <span>${leave.department}</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem;">
+                                    <strong>Valid Leave Dates:</strong>
+                                    <span style="color:#059669; font-weight:700;">${leave.from_date} to ${leave.to_date}</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem;">
+                                    <strong>Destination:</strong>
+                                    <span>${leave.destination_address}</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between;">
+                                    <strong>Parent Contact:</strong>
+                                    <span>${leave.emergency_contact || leave.parent_phone || 'N/A'}</span>
+                                </div>
+                            </div>
+
+                            <div style="margin-top:0.75rem; font-size:0.75rem; color:#047857;">
+                                ✓ Parent Voice Verified • ✓ Advisor Approved • ✓ HOD Authorized • ✓ Warden Cleared
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="result-invalid">
+                            <div style="font-size:2.5rem; margin-bottom:0.25rem;">⚠️</div>
+                            <h2 style="color:#dc2626; margin-bottom:0.25rem;">OUTPASS NOT YET AUTHORIZED</h2>
+                            <p style="color:#991b1b; font-weight:600;">Current Status: ${leave.status}</p>
+                            <p style="color:#7f1d1d; font-size:0.85rem; margin-top:0.4rem;">This request has not received final clearance from the Warden. Student cannot exit campus.</p>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                container.innerHTML = `<div class="result-invalid"><h3 style="color:#dc2626;">System Error</h3><p>Could not connect to database server.</p></div>`;
+            }
+        }
+    </script>
+</body>
+</html>
