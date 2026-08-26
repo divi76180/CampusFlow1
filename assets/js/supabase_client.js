@@ -78,15 +78,16 @@
         }
 
         try {
+            const ident = username.trim();
             const { data: users, error } = await sb
                 .from('users')
                 .select('*')
-                .eq('username', username.trim())
+                .or(`username.eq.${ident},phone.eq.${ident},email.eq.${ident}`)
                 .limit(1);
 
             if (error) throw error;
             if (!users || users.length === 0) {
-                return { success: false, message: 'Invalid username or credentials.' };
+                return { success: false, message: 'Invalid username, phone number, or credentials.' };
             }
 
             const user = users[0];
