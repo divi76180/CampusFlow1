@@ -143,59 +143,29 @@ document.addEventListener('DOMContentLoaded', () => {
             const identifier = document.getElementById('loginIdentifier').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
 
-            // Try Direct Supabase Authentication First
+            // Direct Supabase Authentication
             if (window.CampusDB) {
                 const sbRes = await window.CampusDB.login(identifier, password);
                 if (sbRes.success) {
                     if (alertBox) {
                         alertBox.className = 'alert alert-success';
-                        alertBox.innerHTML = `<strong>Success!</strong> Authenticated via Supabase. Redirecting to ${sbRes.user.role} portal...`;
+                        alertBox.innerHTML = `<strong>Success!</strong> Welcome ${sbRes.user.profile?.full_name || sbRes.user.username}. Redirecting to ${sbRes.user.role} portal...`;
                         alertBox.style.display = 'block';
                     }
                     setTimeout(() => {
                         window.location.href = `${sbRes.user.role}/dashboard.html`;
-                    }, 600);
+                    }, 500);
                     return;
-                }
-            }
-
-            // Fallback to PHP backend if Supabase client not initialized
-            try {
-                const formData = new FormData(loginForm);
-                const res = await fetch(`${apiBase}backend/login.php`, {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await res.json();
-
-                if (data.success) {
-                    if (alertBox) {
-                        alertBox.className = 'alert alert-success';
-                        alertBox.innerHTML = `<strong>Success!</strong> Welcome back. Redirecting...`;
-                        alertBox.style.display = 'block';
-                    }
-                    setTimeout(() => {
-                        const target = isFileProtocol ? `http://127.0.0.1:8080/${data.redirect_url}` : data.redirect_url;
-                        window.location.href = target;
-                    }, 600);
                 } else {
                     if (alertBox) {
                         alertBox.className = 'alert alert-danger';
-                        alertBox.innerHTML = `<strong>Error:</strong> ${data.message}`;
+                        alertBox.innerHTML = `<strong>Error:</strong> ${sbRes.message}`;
                         alertBox.style.display = 'block';
                     }
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = 'Sign In to Dashboard →';
+                    return;
                 }
-            } catch (err) {
-                console.error(err);
-                if (alertBox) {
-                    alertBox.className = 'alert alert-danger';
-                    alertBox.innerHTML = '<strong>Authentication Notice:</strong> Please make sure your Supabase anon API key is configured.';
-                    alertBox.style.display = 'block';
-                }
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = 'Sign In to Dashboard →';
             }
         });
     }
