@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "serve -s . -l 8080",
     "start": "serve -s . -l 8080",
-    "build": "echo 'Static HTML build ready'",
     "deploy": "npx vercel --prod"
   },
   "keywords": [
