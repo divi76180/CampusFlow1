@@ -150,7 +150,7 @@
 
                     if (isParentApproved) {
                         rowClass = 'row-parent-approved';
-                        parentBadge = '<span class="status-badge status-green">✓ Approved (Voice)</span>';
+                        parentBadge = '<span class="status-badge status-green">✓ Approved (SMS OTP)</span>';
                     } else if (st.includes('Rejected')) {
                         rowClass = 'row-parent-rejected';
                         parentBadge = '<span class="status-badge status-red">✗ Rejected</span>';
@@ -185,7 +185,7 @@
                                 </span>
                             </td>
                             <td style="text-align:center;">
-                                <div style="display:inline-flex; gap:0.35rem; flex-wrap:wrap; justify-content:center;">
+                                <div style="display:inline-flex; gap:0.35rem; flex-wrap:wrap; justify-content:center; align-items:center;">
                                     <button type="button" class="btn btn-secondary btn-sm" onclick="viewLeaveLetterDirect(${l.id})">
                                         📄 View
                                     </button>
@@ -196,7 +196,11 @@
                                         <button type="button" class="btn btn-danger btn-sm" onclick="handleAdvisorAction(${l.id}, 'rejected')">
                                             ✗ Reject
                                         </button>
-                                    ` : ''}
+                                    ` : (isParentApproved ? `
+                                        <span style="color:#059669; font-size:0.75rem; font-weight:700; padding:4px 8px; background:#dcfce7; border-radius:4px;">✓ Forwarded to HOD</span>
+                                    ` : `
+                                        <span style="color:#d97706; font-size:0.75rem; font-weight:700; padding:4px 8px; background:#fef3c7; border-radius:4px;">⏳ Parent Approval Required</span>
+                                    `)}
                                 </div>
                             </td>
                         </tr>

@@ -248,12 +248,16 @@
             const hostelPillEl = document.getElementById('userHostelPill');
             if (hostelPillEl) hostelPillEl.textContent = (prof.hostel_status || 'day_scholar').replace('_', ' ');
 
+            const parentName = prof.parent_name || (prof.register_number === '21CS102' ? 'Ramesh Patel' : 'Suresh Sharma');
+            const parentPhone = prof.parent_phone || (prof.register_number === '21CS102' ? '9876543220' : '9876543210');
+
             const metaRowEl = document.getElementById('userMetaRow');
             if (metaRowEl) {
                 metaRowEl.innerHTML = `
                     <span><strong>Register No:</strong> ${prof.register_number || currentUser.username || 'N/A'}</span> &bull;
                     <span><strong>Dept:</strong> ${prof.department || 'Engineering'} (${prof.year || 3}-${prof.section || 'A'})</span> &bull;
-                    <span><strong>Hostel:</strong> ${prof.hostel_status === 'hosteller' ? (prof.room_number || 'Room BH-304') : 'Day Scholar'}</span>
+                    <span><strong>Hostel:</strong> ${prof.hostel_status === 'hosteller' ? (prof.room_number || 'Room BH-304') : 'Day Scholar'}</span> &bull;
+                    <span><strong>Parent:</strong> ${parentName} (${parentPhone})</span>
                 `;
             }
 

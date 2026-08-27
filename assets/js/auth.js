@@ -264,7 +264,7 @@ function renderSignupFormFields(role, container) {
                 </div>
             </div>
             <div class="form-group">
-                <label class="form-label">Preferred Spoken Language for Letter Voice Reading *</label>
+                <label class="form-label">Preferred Language for Voice Reading / Audio Letter *</label>
                 <select name="preferred_language" class="form-control form-select" required>
                     <option value="ta">Tamil (தமிழ்)</option>
                     <option value="hi">Hindi (हिन्दी)</option>
@@ -274,29 +274,17 @@ function renderSignupFormFields(role, container) {
                     <option value="en">English (Indian English)</option>
                 </select>
             </div>
-            
-            <!-- Voice Sample Enrollment Section -->
-            <div class="voice-enrollment-box" id="voiceEnrollmentContainer">
-                <div style="font-weight: 700; color: #1e3a8a; margin-bottom: 0.35rem;">
-                    🎙️ Voice Sample Registration for Biometric Approval
+
+            <!-- SMS OTP Verification Security Banner -->
+            <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 0.85rem 1rem; margin-top: 0.75rem; font-size: 0.85rem; color: #1e3a8a;">
+                <div style="font-weight: 700; margin-bottom: 3px; display:flex; align-items:center; gap:6px;">
+                    <span>📱</span> <span>SMS OTP Authorization Security</span>
                 </div>
-                <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 0.85rem;">
-                    Please record a 3-second consent phrase to enroll your voice profile for future leave verifications.
-                </p>
-                <div class="audio-visualizer" id="enrollVisualizer">
-                    <div class="wave-bar"></div><div class="wave-bar"></div>
-                    <div class="wave-bar"></div><div class="wave-bar"></div>
-                    <div class="wave-bar"></div><div class="wave-bar"></div>
-                    <div class="wave-bar"></div><div class="wave-bar"></div>
+                <div style="color: #3b82f6; line-height:1.4;">
+                    Your mobile number will receive a 6-digit secure SMS OTP whenever your ward applies for institutional leave.
                 </div>
-                <button type="button" class="btn btn-voice btn-sm" id="btnRecordSample">
-                    🔴 Record Voice Sample
-                </button>
-                <input type="hidden" name="voice_sample_data" id="voiceSampleData">
-                <div class="voice-status-text" id="voiceEnrollStatus">Voice sample: Not yet recorded</div>
             </div>
         `;
-        initVoiceEnrollmentWidget();
 
     } else if (role === 'advisor') {
         container.innerHTML = `
@@ -402,54 +390,4 @@ function renderSignupFormFields(role, container) {
             </div>
         `;
     }
-}
-
-/**
- * Initialize Voice Sample Enrollment Recorder in Parent Signup
- */
-function initVoiceEnrollmentWidget() {
-    const btnRecord = document.getElementById('btnRecordSample');
-    const visualizer = document.getElementById('enrollVisualizer');
-    const statusText = document.getElementById('voiceEnrollStatus');
-    const hiddenData = document.getElementById('voiceSampleData');
-    const boxContainer = document.getElementById('voiceEnrollmentContainer');
-
-    if (!btnRecord) return;
-
-    let isRecording = false;
-
-    btnRecord.addEventListener('click', async (e) => {
-        e.preventDefault();
-        if (!isRecording) {
-            const started = await window.CampusVoice.startRecording(visualizer, (base64Audio, transcript) => {
-                hiddenData.value = base64Audio;
-                statusText.innerHTML = '✅ Voice sample successfully enrolled and analyzed!';
-                statusText.style.color = '#059669';
-                boxContainer.classList.add('enrolled');
-                btnRecord.innerHTML = '🔄 Re-record Sample';
-                btnRecord.classList.remove('btn-danger');
-                btnRecord.classList.add('btn-voice');
-            });
-
-            if (started) {
-                isRecording = true;
-                btnRecord.innerHTML = '⏹️ Stop Recording (Speaking...)';
-                btnRecord.classList.remove('btn-voice');
-                btnRecord.classList.add('btn-danger');
-                statusText.innerHTML = 'Recording voice profile... speak naturally for 3-5 seconds.';
-                statusText.style.color = '#dc2626';
-
-                // Automatically stop after 5 seconds
-                setTimeout(() => {
-                    if (isRecording) {
-                        window.CampusVoice.stopRecording();
-                        isRecording = false;
-                    }
-                }, 5000);
-            }
-        } else {
-            window.CampusVoice.stopRecording();
-            isRecording = false;
-        }
-    });
 }

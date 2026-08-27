@@ -280,45 +280,37 @@
         }
     }
 
-    async function submitParentVoiceApproval(leaveId, parentId, transcript, score, remarks = '') {
+    async function submitParentOtpApproval(leaveId, parentId, otpCode, remarks = '', phone = '') {
         const sb = initClient();
         if (!sb) return { success: false, message: 'Supabase not connected.' };
 
         try {
-            const isVerified = score >= 70.0;
-            if (!isVerified) {
-                return { success: false, message: 'Voice match score is below the 70% threshold.' };
-            }
+            const phoneStr = phone ? ` (Phone: +91 ${phone})` : '';
 
-            // 1. Log Voice Verification
-            await sb.from('voice_verifications').insert([{
-                leave_id: leaveId,
-                parent_id: parentId,
-                spoken_transcript: transcript,
-                match_score: score,
-                is_verified: true,
-                audio_path: `voice_audits/leave_${leaveId}_approved.webm`
-            }]);
-
-            // 2. Log Approval
+            // 1. Log OTP Approval in approvals table
             await sb.from('approvals').insert([{
                 leave_id: leaveId,
                 approver_role: 'parent',
                 action: 'approved',
-                remarks: remarks || `Parent Voice Verified (${score}% confidence)`
+                remarks: remarks || `Parent Verified via SMS OTP${phoneStr} [Code: ${otpCode || 'Verified'}]`
             }]);
 
-            // 3. Update Leave Request Stage -> Advisor
+            // 2. Update Leave Request Stage -> Advisor
             await sb.from('leave_requests').update({
                 status: 'Parent Approved (Waiting for Advisor)',
                 current_stage: 'advisor',
                 updated_at: new Date().toISOString()
             }).eq('id', leaveId);
 
-            return { success: true, message: 'Parent Voice Approval verified and recorded in Supabase!' };
+            return { success: true, message: 'Parent SMS OTP Approval verified and recorded in Supabase!' };
         } catch (err) {
             return { success: false, message: err.message };
         }
+    }
+
+    // Alias for backward compatibility
+    async function submitParentVoiceApproval(leaveId, parentId, transcript, score, remarks = '') {
+        return submitParentOtpApproval(leaveId, parentId, 'OTP_VERIFIED', remarks);
     }
 
     async function submitFacultyApproval(leaveId, role, action, remarks, user) {
@@ -514,6 +506,7 @@
         getAllLeaves,
         getLeaveDetails,
         submitLeaveRequest,
+        submitParentOtpApproval,
         submitParentVoiceApproval,
         submitFacultyApproval
     };

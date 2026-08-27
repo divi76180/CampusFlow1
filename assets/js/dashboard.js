@@ -118,8 +118,13 @@ function renderLeaveLetterModal(data) {
 
             <div class="letterhead-footer">
                 <div>
-                    <strong>Parent Voice Verification:</strong><br>
-                    ${voiceVerif && voiceVerif.is_verified ? `✅ Verified (Score: ${voiceVerif.match_score}%)` : (statusText.includes('Parent Approved') ? '✅ Verified by Parent' : '⏳ Pending Parent Confirmation')}
+                    <strong>Parent Authorization Verification:</strong><br>
+                    ${statusText.includes('Parent Approved') || (approvals && approvals.some(a => a.approver_role === 'parent'))
+                        ? `<div style="margin-top:0.25rem;">
+                             <span class="status-badge status-green" style="display:inline-block; margin-bottom:0.25rem;">✅ Verified via SMS OTP (Phone: ${escapeHtml(leave.parent_phone || leave.emergency_contact || 'Registered Phone')})</span>
+                             <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">6-Digit Cryptographic OTP Security Confirmed</div>
+                           </div>` 
+                        : '<span style="color:#d97706; font-size:0.85rem; font-weight:600;">⏳ Pending Parent SMS OTP Authorization</span>'}
                 </div>
                 <div style="text-align: right;">
                     <strong>Student Signature:</strong><br>
@@ -215,7 +220,7 @@ function renderHostelOutpassModal(data) {
             </div>
 
             <div class="outpass-verification-chain">
-                <div class="chain-item">✓ Parent Voice Verified</div>
+                <div class="chain-item">✓ Parent OTP Verified</div>
                 <div class="chain-item">✓ Advisor Approved</div>
                 <div class="chain-item">✓ HOD Authorized</div>
                 <div class="chain-item" style="color:#1e40af; font-weight:700;">✓ Warden Cleared (Gate Pass Active)</div>
@@ -574,7 +579,7 @@ async function viewHostelOutpass(leaveId) {
                 </div>
 
                 <div class="outpass-verification-chain">
-                    <div class="chain-item">✓ Parent Voice Verified</div>
+                    <div class="chain-item">✓ Parent OTP Verified</div>
                     <div class="chain-item">✓ Advisor Approved</div>
                     <div class="chain-item">✓ HOD Authorized</div>
                     <div class="chain-item" style="color:#1e40af; font-weight:700;">✓ Warden Cleared (Gate Pass Active)</div>

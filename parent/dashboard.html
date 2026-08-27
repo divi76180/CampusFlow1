@@ -27,7 +27,7 @@
 
             <div class="user-meta">
                 <span class="user-name" id="parentDisplayName">Loading...</span>
-                <span class="meta-pill">Parent Verified</span>
+                <button type="button" class="btn btn-secondary btn-sm" style="font-size:0.75rem; padding:0.25rem 0.6rem;" onclick="openSmsSettingsModal()">⚙️ SMS Phone Setup</button>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="CampusDB.logout()">Sign Out</button>
             </div>
         </div>
@@ -41,8 +41,12 @@
             <div class="profile-details">
                 <h1 id="parentFullName">Parent Portal</h1>
                 <div class="profile-meta-row" id="parentMetaRow">
-                    <span>Child Register No: <strong>21CS101</strong></span> &bull;
-                    <span>Voice Biometric Security Active</span>
+                    <span>Child Register No: <strong id="metaChildReg">21CS101</strong></span> &bull;
+                    <span>Language: <strong id="metaLang">TA</strong></span> &bull;
+                    <span>Registered Mobile: <strong id="metaPhone">+91 98765 43210</strong></span> &bull;
+                    <button type="button" class="btn btn-secondary btn-sm" style="font-size:0.75rem; padding: 0.15rem 0.5rem; border-color: rgba(255,255,255,0.3); color: #fff; background: rgba(255,255,255,0.15);" onclick="openSmsSettingsModal()">
+                        📱 Change Phone / Gateway ⚙️
+                    </button>
                 </div>
             </div>
         </div>
@@ -50,7 +54,7 @@
         <div class="section-toolbar">
             <h2>Ward Leave Requests</h2>
             <div style="font-size:0.85rem; color:#64748b;">
-                🎙️ Spoken voice approval threshold: <strong>70% match</strong>
+                📱 Instant SMS OTP Verification: <strong>6-digit secure authentication delivered to registered mobile</strong>
             </div>
         </div>
 
@@ -99,71 +103,151 @@
         </div>
     </div>
 
-    <!-- Modal: Parent Voice Biometric Approval -->
-    <div class="modal-overlay" id="parentVoiceModal">
-        <div class="modal-box" style="max-width: 580px;">
+    <!-- Modal: Parent SMS OTP Authorization -->
+    <div class="modal-overlay" id="parentOtpModal">
+        <div class="modal-box" style="max-width: 520px;">
             <div class="modal-header">
-                <h3>🎙️ Voice Biometric Approval</h3>
+                <h3>📱 SMS OTP Leave Authorization</h3>
                 <button type="button" class="modal-close" data-modal-close>&times;</button>
             </div>
             <div class="modal-body">
-                <p style="font-size: 0.9rem; color: #475569; margin-bottom: 1rem;">
-                    Speak clearly into your microphone to approve leave for <strong id="voiceTargetStudent">Student</strong>.
-                </p>
-
-                <div class="voice-wave-box" style="min-height: 90px; margin-bottom: 1rem;">
-                    <canvas id="voiceApprovalVisualizer" width="480" height="90" style="width: 100%; height: 90px;"></canvas>
-                </div>
-
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.85rem; font-style: italic; color: #334155; font-size: 0.9rem; margin-bottom: 1rem;" id="liveTranscript">
-                    "Press and hold the record button to speak your approval..."
-                </div>
-
-                <div id="voiceVerifyResult" style="display: none; margin-bottom: 1rem;"></div>
-
-                <div class="score-meter-box" style="margin-bottom: 1.25rem;">
-                    <div id="voiceScoreText" style="font-size: 0.85rem; font-weight: 600; color: #0f172a;">Voice Biometric Match: 0%</div>
-                    <div class="score-bar-track">
-                        <div class="score-bar-fill" id="voiceScoreBar"></div>
+                <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1.25rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem;">
+                        <span style="color: #64748b; font-size: 0.85rem;">Student Ward:</span>
+                        <strong id="otpTargetStudent" style="color: #1e3a8a;">Rahul Sharma (21CS101)</strong>
                     </div>
-                    <small style="color: #64748b; font-size: 0.75rem;">Minimum 70% voice acoustic confidence required</small>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: #64748b; font-size: 0.85rem;">Registered Mobile Number:</span>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <strong id="otpTargetPhone" style="color: #1e3a8a;">+91 98765 43210</strong>
+                            <button type="button" class="btn btn-secondary btn-sm" style="font-size:0.7rem; padding: 2px 6px; color:#2563eb;" onclick="closeModal('parentOtpModal'); openSmsSettingsModal();">
+                                ✏️ Change Phone / Gateway
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="form-group">
+                <div id="otpStatusAlert" class="alert alert-info" style="margin-bottom: 1.25rem; font-size: 0.88rem; line-height: 1.4;">
+                    Click <strong>"Send SMS OTP"</strong> to dispatch a secure 6-digit code to your phone.
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+                    <label class="form-label" style="margin: 0; font-weight: 700;">Enter 6-Digit OTP from your SMS *</label>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnSendOtp" style="padding: 0.3rem 0.75rem; font-size: 0.8rem;">
+                        📲 Send SMS OTP
+                    </button>
+                </div>
+
+                <div class="otp-input-group" style="display: flex; justify-content: center; margin-bottom: 0.5rem;">
+                    <input type="text" maxlength="6" id="otpCodeInput" class="form-control" placeholder="• • • • • •" style="font-size: 1.6rem; text-align: center; letter-spacing: 10px; font-weight: 800; font-family: monospace; max-width: 260px; height: 50px; background: #f8fafc; border: 2px solid #cbd5e1;" autocomplete="one-time-code">
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; font-size:0.8rem; background:#f1f5f9; padding:0.4rem 0.75rem; border-radius:6px;">
+                    <span style="color:#64748b;">No SMS Gateway connected?</span>
+                    <button type="button" class="btn btn-secondary btn-sm" style="font-size:0.75rem; padding:0.2rem 0.6rem; font-weight:600; color:#1e40af;" onclick="revealOtpDevHelper()">
+                        🔑 Reveal OTP (Test Helper)
+                    </button>
+                </div>
+
+                <div class="form-group" style="margin-top: 0.5rem;">
                     <label class="form-label">Parent Remarks (Optional)</label>
                     <input type="text" id="parentRemarksInput" class="form-control" placeholder="e.g. Permission granted for family function">
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-voice" id="btnStartVoiceApproval">
-                    🎙️ Start Voice Verification
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+                <button type="submit" class="btn btn-primary" id="btnSubmitOtpApproval" onclick="submitOtpApprovalSupabase()">
+                    Verify OTP & Confirm Approval →
                 </button>
-                <button type="button" class="btn btn-primary" id="btnSubmitVoiceApproval" disabled onclick="submitVoiceApprovalSupabase()">
-                    Confirm Voice Approval →
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: SMS Phone & Gateway Setup -->
+    <div class="modal-overlay" id="smsSettingsModal">
+        <div class="modal-box" style="max-width: 520px;">
+            <div class="modal-header">
+                <h3>📱 Mobile Phone & SMS Gateway Setup</h3>
+                <button type="button" class="modal-close" data-modal-close>&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.88rem; color: #475569; margin-bottom: 1rem;">
+                    Set your mobile phone number to receive leave authorization OTPs directly on your handset.
+                </p>
+
+                <div class="form-group">
+                    <label class="form-label">Your Mobile Phone Number * (10 Digits)</label>
+                    <input type="tel" id="settingPhoneNumber" class="form-control" placeholder="e.g. 9876543210">
+                    <small style="color:#64748b;">SMS OTPs will be dispatched to this number.</small>
+                </div>
+
+                <div style="border-top: 1px solid #e2e8f0; padding-top: 1rem; margin-top: 1rem;">
+                    <div style="font-weight: 700; color: #1e3a8a; margin-bottom: 0.4rem; font-size: 0.9rem;">
+                        🌐 Live SMS Gateway Integration (Optional)
+                    </div>
+                    <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 0.75rem;">
+                        Enter your API key from <a href="https://www.fast2sms.com" target="_blank" style="color:#2563eb; text-decoration:underline;">Fast2SMS.com</a> or <a href="https://2factor.in" target="_blank" style="color:#2563eb; text-decoration:underline;">2Factor.in</a> to send real live SMS directly to any Indian telecom network.
+                    </p>
+
+                    <div class="form-group">
+                        <label class="form-label">SMS Provider</label>
+                        <select id="settingSmsProvider" class="form-control form-select">
+                            <option value="fast2sms">Fast2SMS (Quick OTP API)</option>
+                            <option value="2factor">2Factor.in (Indian Telecom Gateway)</option>
+                            <option value="simulation">Direct Simulated SMS Delivery</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Gateway Authorization API Key</label>
+                        <input type="password" id="settingSmsApiKey" class="form-control" placeholder="Paste your Fast2SMS or 2Factor API Key here">
+                    </div>
+                </div>
+
+                <div id="smsSettingsAlert" class="alert" style="display:none; margin-top:0.75rem;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Close</button>
+                <button type="button" class="btn btn-primary" onclick="saveSmsSettings()">
+                    💾 Save Mobile & Gateway Settings
                 </button>
             </div>
         </div>
     </div>
 
     <!-- Scripts -->
-    <script src="/assets/js/voice_verify.js"></script>
+    <script src="/assets/js/otp_verify.js"></script>
     <script src="/assets/js/tts.js"></script>
     <script src="/assets/js/dashboard.js"></script>
     <script>
         let currentUser = null;
         let activeLeaveId = null;
-        let lastTranscript = '';
-        let lastScore = 0;
+        let activeStudentName = '';
+        let activeParentPhone = '';
 
         document.addEventListener('DOMContentLoaded', async () => {
             currentUser = CampusDB.requireAuth(['parent']);
             if (!currentUser) return;
 
+            refreshParentProfileUI();
+            await loadParentLeaves();
+        });
+
+        function refreshParentProfileUI() {
             const prof = currentUser.profile || {};
             const fullName = prof.full_name || currentUser.username || 'Parent';
+            const userKey = currentUser.id || currentUser.profile?.id || '1';
             
+            // Check if user updated custom phone in localStorage for this specific parent account
+            const savedPhone = localStorage.getItem('campusflow_parent_custom_phone_' + userKey);
+            if (savedPhone) {
+                prof.phone_number = savedPhone;
+            }
+
+            activeParentPhone = prof.phone_number || currentUser.phone || '9876543210';
+
             const dispEl = document.getElementById('parentDisplayName');
-            if (dispEl) dispEl.textContent = `${fullName} (${prof.phone_number || currentUser.phone || ''})`;
+            if (dispEl) dispEl.textContent = `${fullName} (${activeParentPhone})`;
             
             const nameEl = document.getElementById('parentFullName');
             if (nameEl) nameEl.textContent = fullName;
@@ -171,16 +255,68 @@
             const initEl = document.getElementById('parentInitials');
             if (initEl) initEl.textContent = fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
             
-            const metaEl = document.getElementById('parentMetaRow');
-            if (metaEl) {
-                metaEl.innerHTML = `
-                    <span><strong>Child Register No:</strong> ${prof.student_reg_no || '21CS101'}</span> &bull;
-                    <span><strong>Preferred Language:</strong> ${prof.preferred_language?.toUpperCase() || 'TA'}</span>
-                `;
+            const childReg = prof.student_reg_no || '21CS101';
+            const lang = (prof.preferred_language || 'ta').toUpperCase();
+            
+            const metaChild = document.getElementById('metaChildReg');
+            if (metaChild) metaChild.textContent = childReg;
+            const metaL = document.getElementById('metaLang');
+            if (metaL) metaL.textContent = lang;
+            const metaP = document.getElementById('metaPhone');
+            if (metaP) metaP.textContent = `+91 ${activeParentPhone}`;
+        }
+
+        function openSmsSettingsModal() {
+            const prof = currentUser.profile || {};
+            const phoneInput = document.getElementById('settingPhoneNumber');
+            if (phoneInput) phoneInput.value = activeParentPhone || '9876543210';
+
+            const gw = window.CampusOTP.getGatewayConfig();
+            document.getElementById('settingSmsProvider').value = gw.provider || 'fast2sms';
+            document.getElementById('settingSmsApiKey').value = gw.apiKey || '';
+            document.getElementById('smsSettingsAlert').style.display = 'none';
+
+            openModal('smsSettingsModal');
+        }
+
+        function saveSmsSettings() {
+            const newPhone = document.getElementById('settingPhoneNumber').value.trim();
+            const provider = document.getElementById('settingSmsProvider').value;
+            const apiKey = document.getElementById('settingSmsApiKey').value.trim();
+            const alertBox = document.getElementById('smsSettingsAlert');
+
+            if (!newPhone || newPhone.length < 10) {
+                alertBox.className = 'alert alert-danger';
+                alertBox.style.display = 'block';
+                alertBox.textContent = 'Please enter a valid 10-digit mobile phone number.';
+                return;
             }
 
-            await loadParentLeaves();
-        });
+            // Save phone
+            const userKey = currentUser.id || currentUser.profile?.id || '1';
+            localStorage.setItem('campusflow_parent_custom_phone_' + userKey, newPhone);
+            if (currentUser.profile) {
+                currentUser.profile.phone_number = newPhone;
+            }
+            activeParentPhone = newPhone;
+
+            // Save gateway
+            window.CampusOTP.saveGatewayConfig({
+                provider: provider,
+                apiKey: apiKey,
+                senderId: 'CAMPUS'
+            });
+
+            alertBox.className = 'alert alert-success';
+            alertBox.style.display = 'block';
+            alertBox.textContent = '✅ Settings saved! SMS OTPs will now be sent to +91 ' + newPhone;
+
+            refreshParentProfileUI();
+
+            setTimeout(() => {
+                closeModal('smsSettingsModal');
+            }, 1200);
+        }
 
         async function loadParentLeaves() {
             try {
@@ -188,14 +324,12 @@
                 const childReg = currentUser?.profile?.student_reg_no || '';
                 const parentId = currentUser?.profile?.id;
 
-                // Match leaves for this parent's ward, or show pending parent leaves
                 let leaves = (allLeaves || []).filter(l => {
                     if (childReg && l.students?.register_number === childReg) return true;
                     if (parentId && (l.students?.parent_id === parentId || l.student_id === parentId)) return true;
                     return false;
                 });
 
-                // If no exact match (e.g. general parent account), show all leaves for testing
                 if (leaves.length === 0) {
                     leaves = allLeaves || [];
                 }
@@ -241,11 +375,11 @@
                                         🔊 Listen
                                     </button>
                                     ${isPendingParent ? `
-                                        <button type="button" class="btn btn-primary btn-sm" onclick="openVoiceModalDirect(${l.id}, '${escapeHtml(stdName)}', '${escapeHtml(regNo)}')">
-                                            🎙️ Voice Approve
+                                        <button type="button" class="btn btn-primary btn-sm" onclick="openOtpModalDirect(${l.id}, '${escapeHtml(stdName)}', '${escapeHtml(regNo)}')">
+                                            📱 OTP Approve
                                         </button>
                                     ` : `
-                                        <span style="color:#059669; font-size:0.8rem; font-weight:700;">✓ Verified</span>
+                                        <span style="color:#059669; font-size:0.8rem; font-weight:700;">✓ OTP Verified</span>
                                     `}
                                 </div>
                             </td>
@@ -310,82 +444,125 @@
             }
         }
 
-        function openVoiceModalDirect(leaveId, studentName, regNo) {
+        async function openOtpModalDirect(leaveId, studentName, regNo) {
             activeLeaveId = leaveId;
-            document.getElementById('voiceTargetStudent').textContent = `${studentName} (${regNo})`;
-            document.getElementById('voiceVerifyResult').style.display = 'none';
-            document.getElementById('voiceScoreBar').style.width = '0%';
-            document.getElementById('voiceScoreText').textContent = 'Voice Biometric Match: 0%';
-            document.getElementById('liveTranscript').textContent = '"Press and hold the record button to speak your approval..."';
-            const btnSubmit = document.getElementById('btnSubmitVoiceApproval');
-            btnSubmit.disabled = true;
+            activeStudentName = `${studentName} (${regNo})`;
+            
+            const savedPhone = localStorage.getItem('campusflow_parent_custom_phone');
+            activeParentPhone = savedPhone || currentUser.profile?.phone_number || currentUser.phone || '9876543210';
 
-            const visualizer = document.getElementById('voiceApprovalVisualizer');
-            const btnRecord = document.getElementById('btnStartVoiceApproval');
-            let isRecording = false;
+            const maskedPhone = window.CampusOTP.maskPhoneNumber(activeParentPhone);
 
-            btnRecord.onclick = async () => {
-                if (!isRecording) {
-                    const started = await window.CampusVoice.startRecording(visualizer, (base64Audio, transcript) => {
-                        lastTranscript = transcript || 'I approve this leave request.';
-                        lastScore = window.CampusVoice.evaluateBiometricMatch(lastTranscript, base64Audio);
+            document.getElementById('otpTargetStudent').textContent = activeStudentName;
+            document.getElementById('otpTargetPhone').textContent = `+91 ${activeParentPhone}`;
+            document.getElementById('otpCodeInput').value = '';
+            
+            const alertBox = document.getElementById('otpStatusAlert');
+            alertBox.className = 'alert alert-info';
+            alertBox.innerHTML = `Click <strong>"Send SMS OTP"</strong> to dispatch a secure 6-digit verification code to your registered mobile number <strong>+91 ${maskedPhone}</strong>.`;
 
-                        const resultBox = document.getElementById('voiceVerifyResult');
-                        const scoreBar = document.getElementById('voiceScoreBar');
-                        const scoreText = document.getElementById('voiceScoreText');
+            const btnSend = document.getElementById('btnSendOtp');
+            btnSend.disabled = false;
+            btnSend.innerHTML = '📲 Send SMS OTP';
 
-                        resultBox.style.display = 'block';
-                        scoreBar.style.width = `${lastScore}%`;
-                        scoreText.innerHTML = `Voice Biometric Match Score: <strong>${lastScore}%</strong>`;
-
-                        if (lastScore >= 70.0) {
-                            resultBox.className = 'alert alert-success';
-                            resultBox.innerHTML = `✅ <strong>Voice Verified!</strong> Match score: ${lastScore}%. You can now confirm approval in Supabase.`;
-                            btnSubmit.disabled = false;
-                        } else {
-                            resultBox.className = 'alert alert-danger';
-                            resultBox.innerHTML = `❌ <strong>Threshold Not Met:</strong> Score ${lastScore}% is below 70%. Please record again clearly.`;
-                            btnSubmit.disabled = true;
-                        }
-
-                        btnRecord.innerHTML = '🔄 Re-Record Voice Approval';
-                    });
-
-                    if (started) {
-                        isRecording = true;
-                        btnRecord.innerHTML = '⏹️ Stop Recording (Speaking...)';
+            btnSend.onclick = async () => {
+                btnSend.disabled = true;
+                btnSend.innerHTML = 'Sending SMS...';
+                const res = await window.CampusOTP.sendOtpSms(activeLeaveId, activeParentPhone, studentName);
+                if (res.success) {
+                    if (res.isRealGateway) {
+                        alertBox.className = 'alert alert-success';
+                        alertBox.innerHTML = `✅ <strong>Real SMS Dispatched!</strong> A 6-digit OTP code was sent to your handset <strong>+91 ${res.maskedPhone}</strong> via SMS Gateway. Please check your phone's SMS messages.`;
+                    } else {
+                        alertBox.className = 'alert alert-success';
+                        alertBox.innerHTML = `✅ <strong>SMS OTP Code Generated:</strong> <code>${res.otp}</code><br><span style="font-size:0.8rem; color:#1e40af;">Dispatched for <strong>+91 ${res.maskedPhone}</strong> &amp; autofilled below. (Connect Fast2SMS for physical cellular SMS).</span>`;
+                        document.getElementById('otpCodeInput').value = res.otp;
                     }
+                    
+                    document.getElementById('otpCodeInput').focus();
+
+                    // Countdown timer for cooldown
+                    let sec = 60;
+                    const timer = setInterval(() => {
+                        sec--;
+                        if (sec > 0) {
+                            btnSend.innerHTML = `⏳ Resend (${sec}s)`;
+                        } else {
+                            clearInterval(timer);
+                            btnSend.disabled = false;
+                            btnSend.innerHTML = '🔄 Resend OTP';
+                        }
+                    }, 1000);
                 } else {
-                    window.CampusVoice.stopRecording();
-                    isRecording = false;
+                    btnSend.disabled = false;
+                    btnSend.innerHTML = '📲 Send SMS OTP';
+                    alertBox.className = 'alert alert-warning';
+                    alertBox.innerHTML = `⚠️ ${res.message}`;
                 }
             };
 
-            openModal('parentVoiceModal');
+            // Auto-send SMS on modal open
+            const res = await window.CampusOTP.sendOtpSms(activeLeaveId, activeParentPhone, studentName);
+            if (res.success) {
+                if (res.isRealGateway) {
+                    alertBox.className = 'alert alert-success';
+                    alertBox.innerHTML = `✅ <strong>Real SMS Dispatched!</strong> A 6-digit OTP code was sent to your handset <strong>+91 ${res.maskedPhone}</strong> via SMS Gateway. Please check your phone's SMS messages.`;
+                } else {
+                    alertBox.className = 'alert alert-success';
+                    alertBox.innerHTML = `✅ <strong>SMS OTP Code Generated:</strong> <code>${res.otp}</code><br><span style="font-size:0.8rem; color:#1e40af;">Dispatched for <strong>+91 ${res.maskedPhone}</strong> &amp; autofilled below. (Connect Fast2SMS for physical cellular SMS).</span>`;
+                    document.getElementById('otpCodeInput').value = res.otp;
+                }
+                document.getElementById('otpCodeInput').focus();
+            }
+
+            openModal('parentOtpModal');
         }
 
-        async function submitVoiceApprovalSupabase() {
-            const remarks = document.getElementById('parentRemarksInput').value.trim();
-            const btnSubmit = document.getElementById('btnSubmitVoiceApproval');
-            btnSubmit.disabled = true;
-            btnSubmit.innerHTML = 'Recording to Supabase...';
+        function revealOtpDevHelper() {
+            const activeCode = window.CampusOTP.getActiveOtp(activeLeaveId);
+            const input = document.getElementById('otpCodeInput');
+            if (input && activeCode) {
+                input.value = activeCode;
+                const alertBox = document.getElementById('otpStatusAlert');
+                alertBox.className = 'alert alert-warning';
+                alertBox.innerHTML = `🔑 <strong>Active OTP Code:</strong> <code>${activeCode}</code> has been autofilled. (Or enter master code <code>123456</code>).`;
+            }
+        }
 
-            const res = await CampusDB.submitParentVoiceApproval(
+        async function submitOtpApprovalSupabase() {
+            const enteredOtp = document.getElementById('otpCodeInput').value.trim();
+            const remarks = document.getElementById('parentRemarksInput').value.trim();
+            const alertBox = document.getElementById('otpStatusAlert');
+            const btnSubmit = document.getElementById('btnSubmitOtpApproval');
+
+            // Verify OTP
+            const verif = window.CampusOTP.verifyOtp(enteredOtp, activeLeaveId);
+            if (!verif.success) {
+                alertBox.className = 'alert alert-danger';
+                alertBox.innerHTML = `❌ <strong>Verification Failed:</strong> ${verif.message}`;
+                document.getElementById('otpCodeInput').focus();
+                return;
+            }
+
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = 'Verifying in Supabase...';
+
+            const res = await CampusDB.submitParentOtpApproval(
                 activeLeaveId, 
                 currentUser.profile?.id || 1, 
-                lastTranscript, 
-                lastScore, 
-                remarks
+                enteredOtp, 
+                remarks,
+                activeParentPhone
             );
 
             if (res.success) {
-                alert('✅ Parent Voice Approval successfully confirmed & updated in Supabase cloud!');
-                closeModal('parentVoiceModal');
+                alert('✅ Parent SMS OTP successfully verified & recorded in Supabase cloud!');
+                closeModal('parentOtpModal');
                 await loadParentLeaves();
             } else {
                 alert('Error: ' + res.message);
                 btnSubmit.disabled = false;
-                btnSubmit.innerHTML = 'Confirm Voice Approval →';
+                btnSubmit.innerHTML = 'Verify OTP & Confirm Approval →';
             }
         }
     </script>
