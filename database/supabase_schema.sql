@@ -132,14 +132,31 @@ CREATE TABLE notifications (
 );
 
 -- ==============================================================================
--- 11. Disable Row Level Security (Allows direct API Signup, Login & Approvals)
+-- 11. Row Level Security & Full Public API Grants
+-- (Ensures zero RLS violations for direct client Signup, Login, Leaves & Approvals)
 -- ==============================================================================
-ALTER TABLE users DISABLE ROW LEVEL SECURITY;
-ALTER TABLE students DISABLE ROW LEVEL SECURITY;
-ALTER TABLE parents DISABLE ROW LEVEL SECURITY;
-ALTER TABLE faculty DISABLE ROW LEVEL SECURITY;
-ALTER TABLE leave_requests DISABLE ROW LEVEL SECURITY;
-ALTER TABLE approvals DISABLE ROW LEVEL SECURITY;
-ALTER TABLE voice_samples DISABLE ROW LEVEL SECURITY;
-ALTER TABLE voice_verifications DISABLE ROW LEVEL SECURITY;
-ALTER TABLE notifications DISABLE ROW LEVEL SECURITY;
+
+-- Enable RLS and add universal full-access policies to all tables
+DO $$
+DECLARE
+    tbl text;
+BEGIN
+    FOR tbl IN 
+        SELECT table_name FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+    LOOP
+        EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY;', tbl);
+        EXECUTE format('DROP POLICY IF EXISTS "allow_all_%I" ON public.%I;', tbl, tbl);
+        EXECUTE format('CREATE POLICY "allow_all_%I" ON public.%I FOR ALL TO public USING (true) WITH CHECK (true);', tbl, tbl);
+    END LOOP;
+END $$;
+
+-- Grant all privileges to anon, authenticated, and service_role
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL ROUTINES IN SCHEMA public TO anon, authenticated, service_role;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+
