@@ -97,6 +97,22 @@
             if (user.role === 'student') {
                 const { data: std } = await sb.from('students').select('*').eq('user_id', user.id).limit(1);
                 profile = std ? std[0] : null;
+                if (profile) {
+                    let parentInfo = null;
+                    if (profile.parent_id) {
+                        const { data: pData } = await sb.from('parents').select('*').eq('id', profile.parent_id).limit(1);
+                        if (pData && pData.length > 0) parentInfo = pData[0];
+                    }
+                    if (!parentInfo && profile.register_number) {
+                        const { data: pData2 } = await sb.from('parents').select('*').eq('student_reg_no', profile.register_number).limit(1);
+                        if (pData2 && pData2.length > 0) parentInfo = pData2[0];
+                    }
+                    if (parentInfo) {
+                        profile.parent_name = parentInfo.full_name;
+                        profile.parent_phone = parentInfo.phone_number;
+                        profile.parent_language = parentInfo.preferred_language;
+                    }
+                }
             } else if (user.role === 'parent') {
                 const { data: par } = await sb.from('parents').select('*').eq('user_id', user.id).limit(1);
                 profile = par ? par[0] : null;
@@ -451,6 +467,12 @@
             // 2. Insert Profile
             let profile = null;
             if (role === 'student') {
+                let parentId = null;
+                const { data: pExist } = await sb.from('parents').select('id, full_name, phone_number').eq('student_reg_no', regNo).limit(1);
+                if (pExist && pExist.length > 0) {
+                    parentId = pExist[0].id;
+                }
+
                 const { data: stdData, error: sErr } = await sb
                     .from('students')
                     .insert([{
@@ -461,24 +483,35 @@
                         year: parseInt(formValues.year || '3', 10),
                         section: formValues.section || 'A',
                         hostel_status: formValues.hostel_status || 'hosteller',
-                        room_number: formValues.room_number || (formValues.hostel_status === 'hosteller' ? 'BH-204' : null)
+                        room_number: formValues.room_number || (formValues.hostel_status === 'hosteller' ? 'BH-204' : null),
+                        parent_id: parentId
                     }])
                     .select();
                 if (sErr) throw sErr;
                 profile = stdData[0];
+                if (pExist && pExist[0]) {
+                    profile.parent_name = pExist[0].full_name;
+                    profile.parent_phone = pExist[0].phone_number;
+                }
             } else if (role === 'parent') {
+                const childReg = (formValues.student_reg_no || '').trim();
                 const { data: pData, error: pErr } = await sb
                     .from('parents')
                     .insert([{
                         user_id: newUser.id,
                         full_name: formValues.full_name,
                         phone_number: phoneNum,
-                        student_reg_no: formValues.student_reg_no || '21CS101',
+                        student_reg_no: childReg || '21CS101',
                         preferred_language: formValues.preferred_language || 'ta'
                     }])
                     .select();
                 if (pErr) throw pErr;
                 profile = pData[0];
+
+                // Link this parent to the student if the student account already exists
+                if (childReg) {
+                    await sb.from('students').update({ parent_id: profile.id }).eq('register_number', childReg);
+                }
             } else if (['advisor', 'hod', 'warden'].includes(role)) {
                 const section = formValues.section_handled || formValues.assigned_section || 'A';
                 const designation = role === 'hod' ? 'Head of Department' : (role === 'warden' ? 'Hostel Warden' : 'Class Advisor');

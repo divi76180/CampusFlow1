@@ -248,8 +248,28 @@
             const hostelPillEl = document.getElementById('userHostelPill');
             if (hostelPillEl) hostelPillEl.textContent = (prof.hostel_status || 'day_scholar').replace('_', ' ');
 
-            const parentName = prof.parent_name || (prof.register_number === '21CS102' ? 'Ramesh Patel' : 'Suresh Sharma');
-            const parentPhone = prof.parent_phone || (prof.register_number === '21CS102' ? '9876543220' : '9876543210');
+            // Dynamically load linked parent details from Supabase
+            let parentName = prof.parent_name;
+            let parentPhone = prof.parent_phone;
+
+            if ((!parentName || !parentPhone) && prof.register_number) {
+                try {
+                    const sb = CampusDB.initClient();
+                    if (sb) {
+                        const { data: pData } = await sb.from('parents').select('*').eq('student_reg_no', prof.register_number).limit(1);
+                        if (pData && pData.length > 0) {
+                            parentName = pData[0].full_name;
+                            parentPhone = pData[0].phone_number;
+                            prof.parent_name = parentName;
+                            prof.parent_phone = parentPhone;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Could not query parent:', e);
+                }
+            }
+
+            const parentDisplay = parentName ? `${parentName} (+91 ${parentPhone})` : 'Parent / Guardian Pending';
 
             const metaRowEl = document.getElementById('userMetaRow');
             if (metaRowEl) {
@@ -257,7 +277,7 @@
                     <span><strong>Register No:</strong> ${prof.register_number || currentUser.username || 'N/A'}</span> &bull;
                     <span><strong>Dept:</strong> ${prof.department || 'Engineering'} (${prof.year || 3}-${prof.section || 'A'})</span> &bull;
                     <span><strong>Hostel:</strong> ${prof.hostel_status === 'hosteller' ? (prof.room_number || 'Room BH-304') : 'Day Scholar'}</span> &bull;
-                    <span><strong>Parent:</strong> ${parentName} (${parentPhone})</span>
+                    <span><strong>Parent:</strong> ${parentDisplay}</span>
                 `;
             }
 
