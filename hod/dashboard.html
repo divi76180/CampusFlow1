@@ -185,7 +185,7 @@
 
                     const stdName = l.students?.full_name || 'Student';
                     const regNo = l.students?.register_number || 'N/A';
-                    const dept = l.students?.department || 'CSE';
+                    const dept = typeof formatStudentDepartment === 'function' ? formatStudentDepartment(l.students?.department, regNo) : (l.students?.department || 'IT');
                     const fromDateStr = l.from_date ? new Date(l.from_date).toLocaleDateString('en-GB', {day:'numeric', month:'short'}) : 'N/A';
                     const toDateStr = l.to_date ? new Date(l.to_date).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'}) : 'N/A';
 

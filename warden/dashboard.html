@@ -217,7 +217,7 @@
 
                     const stdName = l.students?.full_name || 'Hosteller';
                     const regNo = l.students?.register_number || 'N/A';
-                    const dept = l.students?.department || 'CSE';
+                    const dept = typeof formatStudentDepartment === 'function' ? formatStudentDepartment(l.students?.department, regNo) : (l.students?.department || 'IT');
                     const hostelName = l.students?.hostel_block || 'Hostel Block';
                     const room = l.students?.room_number || 'BH-304';
                     const fromDateStr = l.from_date ? new Date(l.from_date).toLocaleDateString('en-GB', {day:'numeric', month:'short'}) : 'N/A';

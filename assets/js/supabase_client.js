@@ -476,13 +476,25 @@
                 const hostelBlock = isHosteller ? (formValues.hostel_block || formValues.hostel_name || 'Dheeran Boys Hostel') : null;
                 const roomNumber = isHosteller ? (formValues.room_number || 'Room 101') : null;
 
+                let deptVal = formValues.department || 'Information Technology';
+                if (regNo) {
+                    const u = regNo.toUpperCase();
+                    if (u.includes('ITR') || u.includes('IT')) deptVal = 'Information Technology';
+                    else if (u.includes('CSR') || u.includes('CSE')) deptVal = 'Computer Science and Engineering';
+                    else if (u.includes('ADR') || u.includes('AIDS')) deptVal = 'Artificial Intelligence and Data Science';
+                    else if (u.includes('ECR') || u.includes('ECE')) deptVal = 'Electronics and Communication';
+                    else if (u.includes('EER') || u.includes('EEE')) deptVal = 'Electrical and Electronics Engineering';
+                    else if (u.includes('MER') || u.includes('MECH')) deptVal = 'Mechanical Engineering';
+                    else if (u.includes('CIR') || u.includes('CIVIL')) deptVal = 'Civil Engineering';
+                }
+
                 const { data: stdData, error: sErr } = await sb
                     .from('students')
                     .insert([{
                         user_id: newUser.id,
                         register_number: regNo,
                         full_name: formValues.full_name,
-                        department: formValues.department,
+                        department: deptVal,
                         year: parseInt(formValues.year || '3', 10),
                         section: formValues.section || 'A',
                         hostel_status: formValues.hostel_status || 'hosteller',

@@ -1,7 +1,55 @@
+function formatStudentDepartment(dept, regNo) {
+    if (regNo) {
+        const u = String(regNo).toUpperCase().trim();
+        if (u.includes('ITR') || u.includes('IT')) return 'Information Technology (IT)';
+        if (u.includes('CSR') || u.includes('CSE') || u.includes('CS')) return 'Computer Science and Engineering (CSE)';
+        if (u.includes('ADR') || u.includes('AIDS') || u.includes('AD')) return 'Artificial Intelligence and Data Science (AI & DS)';
+        if (u.includes('ECR') || u.includes('ECE') || u.includes('EC')) return 'Electronics & Communication (ECE)';
+        if (u.includes('EER') || u.includes('EEE') || u.includes('EE')) return 'Electrical & Electronics (EEE)';
+        if (u.includes('MER') || u.includes('MECH') || u.includes('ME')) return 'Mechanical Engineering (MECH)';
+        if (u.includes('CIR') || u.includes('CIVIL') || u.includes('CE')) return 'Civil Engineering (CIVIL)';
+        if (u.includes('MTR') || u.includes('MTS')) return 'Mechatronics Engineering (MTS)';
+        if (u.includes('BTR') || u.includes('BT')) return 'Biotechnology (BT)';
+        if (u.includes('CHR') || u.includes('CHEM')) return 'Chemical Engineering (CHEM)';
+    }
+    if (dept) {
+        const d = String(dept).toLowerCase();
+        if (d.includes('information') || d === 'it') return 'Information Technology (IT)';
+        if (d.includes('computer') || d === 'cse') return 'Computer Science and Engineering (CSE)';
+        if (d.includes('mechanical') || d === 'mech') return 'Mechanical Engineering (MECH)';
+        if (d.includes('electronics') || d === 'ece') return 'Electronics & Communication (ECE)';
+        if (d.includes('electrical') || d === 'eee') return 'Electrical & Electronics (EEE)';
+        if (d.includes('civil')) return 'Civil Engineering (CIVIL)';
+        if (d.includes('artificial') || d === 'aids') return 'AI & Data Science (AI & DS)';
+        return dept;
+    }
+    return 'Engineering';
+}
+window.formatStudentDepartment = formatStudentDepartment;
+
 /**
- * CampusFlow - Universal Dashboard Interactive Logic
- * Handles Modals, Letter Preview, Voice Approval & Verification, Actions, and Timelines
+ * Open a specific modal by ID
  */
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('active');
+    }
+}
+
+/**
+ * Close a specific modal by ID
+ */
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('active');
+        if (window.CampusTTS) window.CampusTTS.stop();
+        if (window.CampusVoice && window.CampusVoice.isRecording) {
+            window.CampusVoice.stopRecording();
+        }
+    }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     // Close modal on click outside or close button
@@ -32,35 +80,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
- * Open a specific modal by ID
+ * Render Letterhead Preview inside a container
  */
-function openModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.classList.add('active');
-    }
-}
-
-/**
- * Close a specific modal by ID
- */
-function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.classList.remove('active');
-        if (window.CampusTTS) window.CampusTTS.stop();
-        if (window.CampusVoice && window.CampusVoice.isRecording) {
-            window.CampusVoice.stopRecording();
-        }
-    }
-}
-
-function renderLeaveLetterModal(data) {
-    if (!data) return;
-    const leave = data.leave || data || {};
-    const approvals = data.approvals || [];
-    const voiceVerif = data.voice_verification;
-
+function renderLetterhead(leave) {
     const letterContainer = document.getElementById('letterheadContent');
     if (!letterContainer) return;
 
@@ -69,7 +91,7 @@ function renderLeaveLetterModal(data) {
     const createdFormatted = new Date(leave.created_at || Date.now()).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     const stdName = leave.student_name || leave.students?.full_name || 'Student';
     const regNo = leave.register_number || leave.students?.register_number || 'N/A';
-    const dept = leave.department || leave.students?.department || 'Engineering';
+    const dept = formatStudentDepartment(leave.department || leave.students?.department, regNo);
     const yr = leave.year || leave.students?.year || 3;
     const sec = leave.section || leave.students?.section || 'A';
     const hostelSt = (leave.hostel_status || leave.students?.hostel_status || 'day_scholar').replace('_', ' ');

@@ -186,13 +186,13 @@ function renderSignupFormFields(role, container) {
                 </div>
                 <div class="form-group">
                     <label class="form-label">Student ID / Register Number *</label>
-                    <input type="text" name="register_number" class="form-control" placeholder="e.g. 21CS101" required>
+                    <input type="text" name="register_number" id="signupRegisterNumber" class="form-control" placeholder="e.g. 25ITR009 / 21CS101" required oninput="autoDetectDepartmentFromRegNo(this.value)">
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label">Email Address *</label>
-                    <input type="email" name="email" class="form-control" placeholder="rahul@campusflow.edu" required>
+                    <input type="email" name="email" class="form-control" placeholder="student@campusflow.edu" required>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Phone Number *</label>
@@ -202,12 +202,17 @@ function renderSignupFormFields(role, container) {
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label">Department *</label>
-                    <select name="department" class="form-control form-select" required>
-                        <option value="Computer Science and Engineering">Computer Science and Engineering (CSE)</option>
-                        <option value="Electronics and Communication">Electronics & Communication (ECE)</option>
+                    <select name="department" id="signupDepartmentSelect" class="form-control form-select" required>
                         <option value="Information Technology">Information Technology (IT)</option>
+                        <option value="Computer Science and Engineering">Computer Science and Engineering (CSE)</option>
+                        <option value="Artificial Intelligence and Data Science">Artificial Intelligence & Data Science (AI & DS)</option>
+                        <option value="Electronics and Communication">Electronics & Communication (ECE)</option>
+                        <option value="Electrical and Electronics Engineering">Electrical & Electronics (EEE)</option>
                         <option value="Mechanical Engineering">Mechanical Engineering (MECH)</option>
                         <option value="Civil Engineering">Civil Engineering (CIVIL)</option>
+                        <option value="Mechatronics Engineering">Mechatronics Engineering (MTS)</option>
+                        <option value="Biotechnology">Biotechnology (BT)</option>
+                        <option value="Chemical Engineering">Chemical Engineering (CHEM)</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -433,5 +438,34 @@ function toggleHostelSignupFields(status) {
                 inp.removeAttribute('required');
             }
         });
+    }
+}
+
+function autoDetectDepartmentFromRegNo(regNo) {
+    if (!regNo) return;
+    const upper = regNo.toUpperCase().trim();
+    const deptSelect = document.getElementById('signupDepartmentSelect') || document.querySelector('select[name="department"]');
+    if (!deptSelect) return;
+
+    if (upper.includes('ITR') || upper.includes('IT')) {
+        deptSelect.value = 'Information Technology';
+    } else if (upper.includes('CSR') || upper.includes('CSE') || upper.includes('CS')) {
+        deptSelect.value = 'Computer Science and Engineering';
+    } else if (upper.includes('ADR') || upper.includes('AIDS') || upper.includes('AD')) {
+        deptSelect.value = 'Artificial Intelligence and Data Science';
+    } else if (upper.includes('ECR') || upper.includes('ECE') || upper.includes('EC')) {
+        deptSelect.value = 'Electronics and Communication';
+    } else if (upper.includes('EER') || upper.includes('EEE') || upper.includes('EE')) {
+        deptSelect.value = 'Electrical and Electronics Engineering';
+    } else if (upper.includes('MER') || upper.includes('MECH') || upper.includes('ME')) {
+        deptSelect.value = 'Mechanical Engineering';
+    } else if (upper.includes('CIR') || upper.includes('CIVIL') || upper.includes('CE')) {
+        deptSelect.value = 'Civil Engineering';
+    } else if (upper.includes('MTR') || upper.includes('MTS')) {
+        deptSelect.value = 'Mechatronics Engineering';
+    } else if (upper.includes('BTR') || upper.includes('BT')) {
+        deptSelect.value = 'Biotechnology';
+    } else if (upper.includes('CHR') || upper.includes('CHEM')) {
+        deptSelect.value = 'Chemical Engineering';
     }
 }
