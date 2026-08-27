@@ -472,6 +472,9 @@
                 if (pExist && pExist.length > 0) {
                     parentId = pExist[0].id;
                 }
+                const isHosteller = formValues.hostel_status === 'hosteller';
+                const hostelBlock = isHosteller ? (formValues.hostel_block || formValues.hostel_name || 'Kaveri Boys Hostel (BH-1)') : null;
+                const roomNumber = isHosteller ? (formValues.room_number || 'BH-204') : null;
 
                 const { data: stdData, error: sErr } = await sb
                     .from('students')
@@ -483,7 +486,8 @@
                         year: parseInt(formValues.year || '3', 10),
                         section: formValues.section || 'A',
                         hostel_status: formValues.hostel_status || 'hosteller',
-                        room_number: formValues.room_number || (formValues.hostel_status === 'hosteller' ? 'BH-204' : null),
+                        hostel_block: hostelBlock,
+                        room_number: roomNumber,
                         parent_id: parentId
                     }])
                     .select();
@@ -515,17 +519,19 @@
             } else if (['advisor', 'hod', 'warden'].includes(role)) {
                 const section = formValues.section_handled || formValues.assigned_section || 'A';
                 const designation = role === 'hod' ? 'Head of Department' : (role === 'warden' ? 'Hostel Warden' : 'Class Advisor');
+                const hostelBlock = role === 'warden' ? (formValues.hostel_block || formValues.hostel_name || 'Kaveri Boys Hostel (BH-1)') : null;
+
                 const { data: fData, error: fErr } = await sb
                     .from('faculty')
                     .insert([{
                         user_id: newUser.id,
                         faculty_id: facultyId,
                         full_name: formValues.full_name,
-                        department: formValues.department || 'General Engineering',
+                        department: formValues.department || (role === 'warden' ? 'Hostel Administration' : 'Engineering'),
                         designation: designation,
-                        assigned_year: parseInt(formValues.assigned_year || '3', 10),
-                        assigned_section: section,
-                        hostel_block: formValues.hostel_block || (role === 'warden' ? 'Kaveri Boys Hostel' : null)
+                        assigned_year: role === 'advisor' ? parseInt(formValues.year_handled || '3', 10) : null,
+                        assigned_section: role === 'advisor' ? section : null,
+                        hostel_block: hostelBlock
                     }])
                     .select();
                 if (fErr) throw fErr;

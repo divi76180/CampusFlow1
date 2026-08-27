@@ -230,14 +230,31 @@ function renderSignupFormFields(role, container) {
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label">Hostel Status *</label>
-                    <select name="hostel_status" class="form-control form-select" required>
+                    <select name="hostel_status" id="signupHostelStatus" class="form-control form-select" required onchange="toggleHostelSignupFields(this.value)">
                         <option value="hosteller">Hosteller (Requires Warden Approval)</option>
                         <option value="day_scholar">Day Scholar (Skips Warden Stage)</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Parent Phone / ID (For Linking)</label>
-                    <input type="text" name="parent_phone" class="form-control" placeholder="e.g. 9876543210">
+                    <label class="form-label">Parent Phone Number (For Linking)</label>
+                    <input type="tel" name="parent_phone" class="form-control" placeholder="e.g. 9876543210">
+                </div>
+            </div>
+
+            <!-- Dynamic Hosteller Details (Hostel Name & Room Number) -->
+            <div id="hostelDetailsGroup" class="form-row" style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.85rem; border-radius: 8px; margin-bottom: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Hostel Name / Block *</label>
+                    <select name="hostel_block" class="form-control form-select">
+                        <option value="Kaveri Boys Hostel (BH-1)">Kaveri Boys Hostel (BH-1)</option>
+                        <option value="Vaigai Boys Hostel (BH-2)">Vaigai Boys Hostel (BH-2)</option>
+                        <option value="Thamirabarani Girls Hostel (GH-1)">Thamirabarani Girls Hostel (GH-1)</option>
+                        <option value="Ganga Girls Hostel (GH-2)">Ganga Girls Hostel (GH-2)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Room Number *</label>
+                    <input type="text" name="room_number" class="form-control" placeholder="e.g. BH-304 / Room 102">
                 </div>
             </div>
         `;
@@ -389,5 +406,20 @@ function renderSignupFormFields(role, container) {
                 </select>
             </div>
         `;
+    }
+}
+
+function toggleHostelSignupFields(status) {
+    const group = document.getElementById('hostelDetailsGroup');
+    if (group) {
+        group.style.display = (status === 'hosteller') ? 'grid' : 'none';
+        const inputs = group.querySelectorAll('input, select');
+        inputs.forEach(inp => {
+            if (status === 'hosteller') {
+                inp.setAttribute('required', 'required');
+            } else {
+                inp.removeAttribute('required');
+            }
+        });
     }
 }

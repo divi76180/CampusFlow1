@@ -35,6 +35,7 @@ CREATE TABLE students (
     year INT NOT NULL CHECK (year BETWEEN 1 AND 5),
     section VARCHAR(10) NOT NULL DEFAULT 'A',
     hostel_status VARCHAR(20) NOT NULL CHECK (hostel_status IN ('hosteller', 'day_scholar')),
+    hostel_block VARCHAR(100),
     room_number VARCHAR(30),
     parent_id BIGINT,
     created_at TIMESTAMPTZ DEFAULT NOW()

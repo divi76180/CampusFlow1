@@ -147,14 +147,29 @@
         async function loadWardenLeaves() {
             try {
                 const allLeaves = await CampusDB.getAllLeaves();
-                // Filter hostellers only
-                const leaves = (allLeaves || []).filter(l => l.students?.hostel_status === 'hosteller');
+                const prof = currentUser.profile || {};
+                const wardenHostel = (prof.hostel_block || '').toLowerCase().trim();
+
+                // Filter hostellers matching this specific warden's hostel block (or all hostellers if general warden)
+                const leaves = (allLeaves || []).filter(l => {
+                    const isHosteller = l.students?.hostel_status === 'hosteller';
+                    if (!isHosteller) return false;
+
+                    if (wardenHostel) {
+                        const stdHostel = (l.students?.hostel_block || '').toLowerCase().trim();
+                        const stdRoom = (l.students?.room_number || '').toLowerCase().trim();
+                        if (stdHostel) {
+                            return stdHostel.includes(wardenHostel) || wardenHostel.includes(stdHostel);
+                        }
+                    }
+                    return true;
+                });
 
                 const tbody = document.getElementById('wardenTableBody');
                 if (!tbody) return;
 
                 if (leaves.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:3rem; color:#94a3b8;">No hosteller leave applications found in Supabase.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:3rem; color:#94a3b8;">No hosteller leave applications found for ${escapeHtml(prof.hostel_block || 'your hostel block')}.</td></tr>`;
                     return;
                 }
 
@@ -167,6 +182,7 @@
                     const stdName = l.students?.full_name || 'Hosteller';
                     const regNo = l.students?.register_number || 'N/A';
                     const dept = l.students?.department || 'CSE';
+                    const hostelName = l.students?.hostel_block || 'Hostel Block';
                     const room = l.students?.room_number || 'BH-304';
                     const fromDateStr = l.from_date ? new Date(l.from_date).toLocaleDateString('en-GB', {day:'numeric', month:'short'}) : 'N/A';
                     const toDateStr = l.to_date ? new Date(l.to_date).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'}) : 'N/A';
@@ -178,8 +194,8 @@
                                 <span style="font-size:0.8rem; color:#64748b;">${escapeHtml(regNo)}</span>
                             </td>
                             <td>
-                                ${escapeHtml(dept)}<br>
-                                <span style="font-size:0.8rem; color:#d97706; font-weight:700;">🏠 ${escapeHtml(room)}</span>
+                                <strong>${escapeHtml(hostelName)}</strong><br>
+                                <span style="font-size:0.8rem; color:#d97706; font-weight:700;">🏠 ${escapeHtml(room)} (${escapeHtml(dept)})</span>
                             </td>
                             <td>
                                 <span style="font-weight:600; color:#1e40af;">${escapeHtml(l.leave_type || 'Leave')}</span><br>
