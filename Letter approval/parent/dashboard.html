@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parent Portal – CampusFlow</title>
+    <link rel="stylesheet" href="../assets/css/main.css">
+    <link rel="stylesheet" href="../assets/css/dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase_client.js"></script>
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <header class="main-header">
+        <div class="container nav-wrapper">
+            <a href="../index.html" class="brand-logo">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                CampusFlow
+                <span class="brand-badge" style="background:#f59e0b; color:#fff;">Parent Portal</span>
+            </a>
+
+            <div class="user-meta">
+                <span class="user-name" id="parentDisplayName">Loading...</span>
+                <span class="meta-pill">Parent Verified</span>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="CampusDB.logout()">Sign Out</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <!-- Welcome Banner -->
+        <div class="profile-banner" style="background: linear-gradient(135deg, #1e293b 0%, #78350f 100%);">
+            <div class="profile-avatar" style="background: #f59e0b;" id="parentInitials">SP</div>
+            <div class="profile-details">
+                <h1 id="parentFullName">Parent Portal</h1>
+                <div class="profile-meta-row" id="parentMetaRow">
+                    <span>Child Register No: <strong>21CS101</strong></span> &bull;
+                    <span>Voice Biometric Security Active</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-toolbar">
+            <h2>Ward Leave Requests</h2>
+            <div style="font-size:0.85rem; color:#64748b;">
+                🎙️ Spoken voice approval threshold: <strong>70% match</strong>
+            </div>
+        </div>
+
+        <!-- Table Card -->
+        <div class="table-card">
+            <div class="table-responsive">
+                <table class="custom-table" id="parentTable">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Category</th>
+                            <th>Dates</th>
+                            <th>Reason</th>
+                            <th>Destination</th>
+                            <th>Status</th>
+                            <th style="text-align: center; width: 300px;">Verification Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="parentTableBody">
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 2.5rem; color: #94a3b8;">
+                                Loading records from Supabase...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal: View Leave Letter & Listen to TTS -->
+    <div class="modal-overlay" id="leaveLetterModal">
+        <div class="modal-box" style="max-width: 780px;">
+            <div class="modal-header">
+                <h3>Official Leave Application</h3>
+                <button type="button" class="modal-close" data-modal-close>&times;</button>
+            </div>
+            <div class="modal-body" id="letterheadContent"></div>
+            <div class="modal-footer" style="justify-content: space-between;">
+                <button type="button" class="btn btn-voice" id="btnListenLetterModal">
+                    🔊 Listen to Application (Audio TTS)
+                </button>
+                <button type="button" class="btn btn-secondary" data-modal-close>Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Parent Voice Biometric Approval -->
+    <div class="modal-overlay" id="parentVoiceModal">
+        <div class="modal-box" style="max-width: 580px;">
+            <div class="modal-header">
+                <h3>🎙️ Voice Biometric Approval</h3>
+                <button type="button" class="modal-close" data-modal-close>&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.9rem; color: #475569; margin-bottom: 1rem;">
+                    Speak clearly into your microphone to approve leave for <strong id="voiceTargetStudent">Student</strong>.
+                </p>
+
+                <div class="voice-wave-box" style="min-height: 90px; margin-bottom: 1rem;">
+                    <canvas id="voiceApprovalVisualizer" width="480" height="90" style="width: 100%; height: 90px;"></canvas>
+                </div>
+
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.85rem; font-style: italic; color: #334155; font-size: 0.9rem; margin-bottom: 1rem;" id="liveTranscript">
+                    "Press and hold the record button to speak your approval..."
+                </div>
+
+                <div id="voiceVerifyResult" style="display: none; margin-bottom: 1rem;"></div>
+
+                <div class="score-meter-box" style="margin-bottom: 1.25rem;">
+                    <div id="voiceScoreText" style="font-size: 0.85rem; font-weight: 600; color: #0f172a;">Voice Biometric Match: 0%</div>
+                    <div class="score-bar-track">
+                        <div class="score-bar-fill" id="voiceScoreBar"></div>
+                    </div>
+                    <small style="color: #64748b; font-size: 0.75rem;">Minimum 70% voice acoustic confidence required</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Parent Remarks (Optional)</label>
+                    <input type="text" id="parentRemarksInput" class="form-control" placeholder="e.g. Permission granted for family function">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-voice" id="btnStartVoiceApproval">
+                    🎙️ Start Voice Verification
+                </button>
+                <button type="button" class="btn btn-primary" id="btnSubmitVoiceApproval" disabled onclick="submitVoiceApprovalSupabase()">
+                    Confirm Voice Approval →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../assets/js/voice_verify.js"></script>
+    <script src="../assets/js/tts.js"></script>
+    <script src="../assets/js/dashboard.js"></script>
+    <script>
+        let currentUser = null;
+        let activeLeaveId = null;
+        let lastTranscript = '';
+        let lastScore = 0;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            currentUser = CampusDB.requireAuth(['parent']);
+            if (!currentUser) return;
+
+            const prof = currentUser.profile || {};
+            const fullName = prof.full_name || currentUser.username;
+            document.getElementById('parentDisplayName').textContent = `${fullName} (${prof.phone_number || currentUser.phone})`;
+            document.getElementById('parentFullName').textContent = fullName;
+            document.getElementById('parentInitials').textContent = fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            document.getElementById('parentMetaRow').innerHTML = `
+                <span><strong>Child Register No:</strong> ${prof.student_reg_no || '21CS101'}</span> &bull;
+                <span><strong>Preferred Language:</strong> ${prof.preferred_language?.toUpperCase() || 'TA'}</span>
+            `;
+
+            await loadParentLeaves();
+        });
+
+        async function loadParentLeaves() {
+            const allLeaves = await CampusDB.getAllLeaves();
+            const childReg = currentUser.profile?.student_reg_no || '21CS101';
+            const leaves = allLeaves.filter(l => l.students?.register_number === childReg || l.student_id === currentUser.profile?.id);
+
+            const tbody = document.getElementById('parentTableBody');
+            if (leaves.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:3rem; color:#94a3b8;">No leave applications found for your ward.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            leaves.forEach(l => {
+                const isPendingParent = l.status === 'Waiting for Parent' || l.current_stage === 'parent';
+                const stdName = l.students?.full_name || 'Ward';
+                const regNo = l.students?.register_number || childReg;
+
+                html += `
+                    <tr>
+                        <td>
+                            <strong>${escapeHtml(stdName)}</strong><br>
+                            <span style="font-size:0.8rem; color:#64748b;">${escapeHtml(regNo)}</span>
+                        </td>
+                        <td><span style="font-weight:600; color:#1e40af;">${escapeHtml(l.leave_type)}</span></td>
+                        <td>${new Date(l.from_date).toLocaleDateString('en-GB', {day:'numeric', month:'short'})} - ${new Date(l.to_date).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'})}</td>
+                        <td style="max-width:180px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${escapeHtml(l.reason)}</td>
+                        <td>${escapeHtml(l.destination_address)}</td>
+                        <td>
+                            <span class="status-badge ${getStatusClass(l.status)}">
+                                ${escapeHtml(l.status)}
+                            </span>
+                        </td>
+                        <td style="text-align:center;">
+                            <div style="display:inline-flex; gap:0.4rem; flex-wrap:wrap; justify-content:center;">
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="viewLeaveLetterDirect(${l.id})">
+                                    📄 View
+                                </button>
+                                <button type="button" class="btn btn-voice btn-sm" onclick="listenToLetterDirect(${l.id})">
+                                    🔊 Listen
+                                </button>
+                                ${isPendingParent ? `
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="openVoiceModalDirect(${l.id}, '${stdName}', '${regNo}')">
+                                        🎙️ Voice Approve
+                                    </button>
+                                ` : `
+                                    <span style="color:#059669; font-size:0.8rem; font-weight:700;">✓ Verified</span>
+                                `}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        async function viewLeaveLetterDirect(leaveId) {
+            const data = await CampusDB.getLeaveDetails(leaveId);
+            if (!data) return;
+            renderLeaveLetterModal(data);
+            openModal('leaveLetterModal');
+
+            document.getElementById('btnListenLetterModal').onclick = () => {
+                const lang = currentUser.profile?.preferred_language || 'ta';
+                window.CampusTTS.speakLetter(data.leave, lang);
+            };
+        }
+
+        async function listenToLetterDirect(leaveId) {
+            const data = await CampusDB.getLeaveDetails(leaveId);
+            if (!data) return;
+            const lang = currentUser.profile?.preferred_language || 'ta';
+            window.CampusTTS.speakLetter(data.leave, lang);
+        }
+
+        function openVoiceModalDirect(leaveId, studentName, regNo) {
+            activeLeaveId = leaveId;
+            document.getElementById('voiceTargetStudent').textContent = `${studentName} (${regNo})`;
+            document.getElementById('voiceVerifyResult').style.display = 'none';
+            document.getElementById('voiceScoreBar').style.width = '0%';
+            document.getElementById('voiceScoreText').textContent = 'Voice Biometric Match: 0%';
+            document.getElementById('liveTranscript').textContent = '"Press and hold the record button to speak your approval..."';
+            const btnSubmit = document.getElementById('btnSubmitVoiceApproval');
+            btnSubmit.disabled = true;
+
+            const visualizer = document.getElementById('voiceApprovalVisualizer');
+            const btnRecord = document.getElementById('btnStartVoiceApproval');
+            let isRecording = false;
+
+            btnRecord.onclick = async () => {
+                if (!isRecording) {
+                    const started = await window.CampusVoice.startRecording(visualizer, (base64Audio, transcript) => {
+                        lastTranscript = transcript || 'I approve this leave request.';
+                        lastScore = window.CampusVoice.evaluateBiometricMatch(lastTranscript, base64Audio);
+
+                        const resultBox = document.getElementById('voiceVerifyResult');
+                        const scoreBar = document.getElementById('voiceScoreBar');
+                        const scoreText = document.getElementById('voiceScoreText');
+
+                        resultBox.style.display = 'block';
+                        scoreBar.style.width = `${lastScore}%`;
+                        scoreText.innerHTML = `Voice Biometric Match Score: <strong>${lastScore}%</strong>`;
+
+                        if (lastScore >= 70.0) {
+                            resultBox.className = 'alert alert-success';
+                            resultBox.innerHTML = `✅ <strong>Voice Verified!</strong> Match score: ${lastScore}%. You can now confirm approval in Supabase.`;
+                            btnSubmit.disabled = false;
+                        } else {
+                            resultBox.className = 'alert alert-danger';
+                            resultBox.innerHTML = `❌ <strong>Threshold Not Met:</strong> Score ${lastScore}% is below 70%. Please record again clearly.`;
+                            btnSubmit.disabled = true;
+                        }
+
+                        btnRecord.innerHTML = '🔄 Re-Record Voice Approval';
+                    });
+
+                    if (started) {
+                        isRecording = true;
+                        btnRecord.innerHTML = '⏹️ Stop Recording (Speaking...)';
+                    }
+                } else {
+                    window.CampusVoice.stopRecording();
+                    isRecording = false;
+                }
+            };
+
+            openModal('parentVoiceModal');
+        }
+
+        async function submitVoiceApprovalSupabase() {
+            const remarks = document.getElementById('parentRemarksInput').value.trim();
+            const btnSubmit = document.getElementById('btnSubmitVoiceApproval');
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = 'Recording to Supabase...';
+
+            const res = await CampusDB.submitParentVoiceApproval(
+                activeLeaveId, 
+                currentUser.profile?.id || 1, 
+                lastTranscript, 
+                lastScore, 
+                remarks
+            );
+
+            if (res.success) {
+                alert('✅ Parent Voice Approval successfully confirmed & updated in Supabase cloud!');
+                closeModal('parentVoiceModal');
+                await loadParentLeaves();
+            } else {
+                alert('Error: ' + res.message);
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = 'Confirm Voice Approval →';
+            }
+        }
+    </script>
+</body>
+</html>
