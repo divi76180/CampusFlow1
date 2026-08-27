@@ -246,10 +246,16 @@ function renderSignupFormFields(role, container) {
                 <div class="form-group">
                     <label class="form-label">Hostel Name / Block *</label>
                     <select name="hostel_block" class="form-control form-select">
-                        <option value="Kaveri Boys Hostel (BH-1)">Kaveri Boys Hostel (BH-1)</option>
-                        <option value="Vaigai Boys Hostel (BH-2)">Vaigai Boys Hostel (BH-2)</option>
-                        <option value="Thamirabarani Girls Hostel (GH-1)">Thamirabarani Girls Hostel (GH-1)</option>
-                        <option value="Ganga Girls Hostel (GH-2)">Ganga Girls Hostel (GH-2)</option>
+                        <optgroup label="👦 Boys Hostels">
+                            <option value="Dheeran Boys Hostel">Dheeran Boys Hostel</option>
+                            <option value="Ponnar Boys Hostel">Ponnar Boys Hostel</option>
+                            <option value="Valluvar Boys Hostel">Valluvar Boys Hostel</option>
+                        </optgroup>
+                        <optgroup label="👧 Girls Hostels">
+                            <option value="Bhavani Girls Hostel">Bhavani Girls Hostel</option>
+                            <option value="Kaveri Girls Hostel">Kaveri Girls Hostel</option>
+                            <option value="Amaravathi Girls Hostel">Amaravathi Girls Hostel</option>
+                        </optgroup>
                     </select>
                 </div>
                 <div class="form-group">
@@ -399,10 +405,16 @@ function renderSignupFormFields(role, container) {
             <div class="form-group">
                 <label class="form-label">Hostel Block In-Charge *</label>
                 <select name="hostel_block" class="form-control form-select" required>
-                    <option value="Kaveri Boys Hostel (BH-1)">Kaveri Boys Hostel (BH-1)</option>
-                    <option value="Vaigai Boys Hostel (BH-2)">Vaigai Boys Hostel (BH-2)</option>
-                    <option value="Thamirabarani Girls Hostel (GH-1)">Thamirabarani Girls Hostel (GH-1)</option>
-                    <option value="Ganga Girls Hostel (GH-2)">Ganga Girls Hostel (GH-2)</option>
+                    <optgroup label="👦 Boys Hostels">
+                        <option value="Dheeran Boys Hostel">Dheeran Boys Hostel</option>
+                        <option value="Ponnar Boys Hostel">Ponnar Boys Hostel</option>
+                        <option value="Valluvar Boys Hostel">Valluvar Boys Hostel</option>
+                    </optgroup>
+                    <optgroup label="👧 Girls Hostels">
+                        <option value="Bhavani Girls Hostel">Bhavani Girls Hostel</option>
+                        <option value="Kaveri Girls Hostel">Kaveri Girls Hostel</option>
+                        <option value="Amaravathi Girls Hostel">Amaravathi Girls Hostel</option>
+                    </optgroup>
                 </select>
             </div>
         `;

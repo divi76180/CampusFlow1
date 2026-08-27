@@ -473,8 +473,8 @@
                     parentId = pExist[0].id;
                 }
                 const isHosteller = formValues.hostel_status === 'hosteller';
-                const hostelBlock = isHosteller ? (formValues.hostel_block || formValues.hostel_name || 'Kaveri Boys Hostel (BH-1)') : null;
-                const roomNumber = isHosteller ? (formValues.room_number || 'BH-204') : null;
+                const hostelBlock = isHosteller ? (formValues.hostel_block || formValues.hostel_name || 'Dheeran Boys Hostel') : null;
+                const roomNumber = isHosteller ? (formValues.room_number || 'Room 101') : null;
 
                 const { data: stdData, error: sErr } = await sb
                     .from('students')
@@ -519,7 +519,7 @@
             } else if (['advisor', 'hod', 'warden'].includes(role)) {
                 const section = formValues.section_handled || formValues.assigned_section || 'A';
                 const designation = role === 'hod' ? 'Head of Department' : (role === 'warden' ? 'Hostel Warden' : 'Class Advisor');
-                const hostelBlock = role === 'warden' ? (formValues.hostel_block || formValues.hostel_name || 'Kaveri Boys Hostel (BH-1)') : null;
+                const hostelBlock = role === 'warden' ? (formValues.hostel_block || formValues.hostel_name || 'Dheeran Boys Hostel') : null;
 
                 const { data: fData, error: fErr } = await sb
                     .from('faculty')
