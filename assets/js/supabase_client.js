@@ -552,7 +552,17 @@
             };
         } catch (err) {
             console.error('Signup error:', err);
-            return { success: false, message: err.message || 'Signup failed.' };
+            let msg = err.message || 'Signup failed.';
+            if (err.code === '23505' || msg.includes('users_username_key') || msg.includes('duplicate key') || msg.includes('already exists')) {
+                if (role === 'student') {
+                    msg = `Student Register Number "${formValues.register_number || formValues.username || ''}" is already registered! Please <a href="/login.html" style="text-decoration:underline; font-weight:700; color:inherit;">Sign In here</a>.`;
+                } else if (role === 'parent') {
+                    msg = `Parent mobile number "${formValues.phone || ''}" is already registered! Please <a href="/login.html" style="text-decoration:underline; font-weight:700; color:inherit;">Sign In here</a>.`;
+                } else {
+                    msg = `Faculty ID "${formValues.faculty_id || formValues.username || ''}" is already registered! Please <a href="/login.html" style="text-decoration:underline; font-weight:700; color:inherit;">Sign In here</a>.`;
+                }
+            }
+            return { success: false, message: msg };
         }
     }
 
