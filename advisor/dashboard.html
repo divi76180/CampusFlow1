@@ -36,13 +36,42 @@
     <main class="container">
 
         <!-- Profile Banner -->
-        <div class="profile-banner" style="background: linear-gradient(135deg, #0f172a 0%, #1e40af 100%);">
-            <div class="profile-avatar" style="background: #2563eb;" id="advisorInitials">AR</div>
-            <div class="profile-details">
-                <h1 id="advisorFullName">Class Advisor Portal</h1>
-                <div class="profile-meta-row" id="advisorMetaRow">
-                    <span>Department of Computer Science & Engineering</span> &bull;
-                    <span>Class 3-A</span>
+        <div class="profile-banner-card" style="background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);">
+            <div class="profile-banner-grid">
+                <div style="display: flex; align-items: center; gap: 1.25rem;">
+                    <div class="user-avatar" style="width: 54px; height: 54px; font-size: 1.3rem; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700;" id="advisorInitials">AR</div>
+                    <div class="profile-main-details">
+                        <h1 id="advisorFullName">Class Advisor Portal</h1>
+                        <div class="profile-meta-tags" id="advisorMetaRow">
+                            <span>Department of Computer Science & Engineering</span> &bull;
+                            <span>Class 3-A</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats Cards -->
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-blue">📋</div>
+                <div class="stat-content">
+                    <h3 id="advStatTotal">0</h3>
+                    <p>Department Requests</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-green">🟢</div>
+                <div class="stat-content">
+                    <h3 id="advStatReady">0</h3>
+                    <p>Ready to Forward</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-yellow">⏳</div>
+                <div class="stat-content">
+                    <h3 id="advStatPending">0</h3>
+                    <p>Awaiting Parent</p>
                 </div>
             </div>
         </div>
@@ -50,7 +79,7 @@
         <div class="section-toolbar">
             <h2>Department Student Leave Requests</h2>
             <div style="font-size: 0.85rem; color: #64748b;">
-                🟢 Green = Parent Approved | 🟡 Yellow = Parent Pending | 🔴 Red = Parent Rejected
+                🟢 Green = Parent Approved (Actionable) | 🟡 Yellow = Parent Pending | 🔴 Red = Rejected
             </div>
         </div>
 
@@ -133,6 +162,14 @@
                 const leaves = await CampusDB.getAllLeaves();
                 const tbody = document.getElementById('advisorTableBody');
                 if (!tbody) return;
+
+                const allLeaves = leaves || [];
+                const totalEl = document.getElementById('advStatTotal');
+                if (totalEl) totalEl.textContent = allLeaves.length;
+                const readyEl = document.getElementById('advStatReady');
+                if (readyEl) readyEl.textContent = allLeaves.filter(l => l.status === 'Parent Approved (Waiting for Advisor)' || l.current_stage === 'advisor').length;
+                const pendingEl = document.getElementById('advStatPending');
+                if (pendingEl) pendingEl.textContent = allLeaves.filter(l => l.status === 'Waiting for Parent' || l.current_stage === 'parent').length;
 
                 if (!leaves || leaves.length === 0) {
                     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:3rem; color:#94a3b8;">No student leave applications found in Supabase.</td></tr>`;

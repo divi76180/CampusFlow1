@@ -34,13 +34,41 @@
     <main class="container">
 
         <!-- Profile Banner -->
-        <div class="profile-banner" style="background: linear-gradient(135deg, #0f172a 0%, #78350f 100%);">
-            <div class="profile-avatar" style="background: #d97706;" id="wardenInitials">RB</div>
-            <div class="profile-details">
-                <h1 id="wardenFullName">Hostel Warden Portal</h1>
-                <div class="profile-meta-row" id="wardenMetaRow">
-                    <span>Kaveri Boys Hostel Block</span> &bull;
-                    <span>Gate Clearance & Digital Outpass Issuance</span>
+        <div class="profile-banner-card" style="background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);">
+            <div class="profile-banner-grid">
+                <div style="display: flex; align-items: center; gap: 1.25rem;">
+                    <div class="user-avatar" style="width: 54px; height: 54px; font-size: 1.3rem; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700;" id="wardenInitials">RB</div>
+                    <div class="profile-main-details">
+                        <h1 id="wardenFullName">Hostel Warden Portal</h1>
+                        <div class="profile-meta-tags" id="wardenMetaRow">
+                            <span>Gate Clearance & Digital Outpass Issuance</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats Cards -->
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-blue">🏢</div>
+                <div class="stat-content">
+                    <h3 id="wardenStatTotal">0</h3>
+                    <p>Hostel Requests</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-yellow">⏳</div>
+                <div class="stat-content">
+                    <h3 id="wardenStatReady">0</h3>
+                    <p>Awaiting Outpass</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-green">🎫</div>
+                <div class="stat-content">
+                    <h3 id="wardenStatCleared">0</h3>
+                    <p>Outpasses Cleared</p>
                 </div>
             </div>
         </div>
@@ -48,7 +76,7 @@
         <div class="section-toolbar">
             <h2>Hosteller Gate Pass Clearances</h2>
             <div style="font-size: 0.85rem; color: #64748b;">
-                🎫 Only students residing in hostels appear here for gate clearance.
+                🎫 Only students residing in your designated hostel block appear here for gate clearance.
             </div>
         </div>
 
@@ -59,7 +87,7 @@
                     <thead>
                         <tr>
                             <th>Hosteller</th>
-                            <th>Class & Room</th>
+                            <th>Hostel & Room</th>
                             <th>Category & Dates</th>
                             <th>Destination</th>
                             <th>Prior Approvals</th>
@@ -167,6 +195,14 @@
 
                 const tbody = document.getElementById('wardenTableBody');
                 if (!tbody) return;
+
+                const allWardenLeaves = leaves || [];
+                const totalEl = document.getElementById('wardenStatTotal');
+                if (totalEl) totalEl.textContent = allWardenLeaves.length;
+                const readyEl = document.getElementById('wardenStatReady');
+                if (readyEl) readyEl.textContent = allWardenLeaves.filter(l => l.status === 'Waiting for Warden (HOD Approved)' || l.current_stage === 'warden').length;
+                const clearedEl = document.getElementById('wardenStatCleared');
+                if (clearedEl) clearedEl.textContent = allWardenLeaves.filter(l => (l.status || '').toLowerCase().includes('completed')).length;
 
                 if (leaves.length === 0) {
                     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:3rem; color:#94a3b8;">No hosteller leave applications found for ${escapeHtml(prof.hostel_block || 'your hostel block')}.</td></tr>`;

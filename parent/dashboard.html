@@ -36,17 +36,48 @@
     <main class="container">
 
         <!-- Welcome Banner -->
-        <div class="profile-banner" style="background: linear-gradient(135deg, #1e293b 0%, #78350f 100%);">
-            <div class="profile-avatar" style="background: #f59e0b;" id="parentInitials">SP</div>
-            <div class="profile-details">
-                <h1 id="parentFullName">Parent Portal</h1>
-                <div class="profile-meta-row" id="parentMetaRow">
-                    <span>Child Register No: <strong id="metaChildReg">21CS101</strong></span> &bull;
-                    <span>Language: <strong id="metaLang">TA</strong></span> &bull;
-                    <span>Registered Mobile: <strong id="metaPhone">+91 98765 43210</strong></span> &bull;
-                    <button type="button" class="btn btn-secondary btn-sm" style="font-size:0.75rem; padding: 0.15rem 0.5rem; border-color: rgba(255,255,255,0.3); color: #fff; background: rgba(255,255,255,0.15);" onclick="openSmsSettingsModal()">
-                        📱 Change Phone / Gateway ⚙️
+        <div class="profile-banner-card" style="background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);">
+            <div class="profile-banner-grid">
+                <div style="display: flex; align-items: center; gap: 1.25rem;">
+                    <div class="user-avatar" style="width: 54px; height: 54px; font-size: 1.3rem; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700;" id="parentInitials">SP</div>
+                    <div class="profile-main-details">
+                        <h1 id="parentFullName">Parent Portal</h1>
+                        <div class="profile-meta-tags" id="parentMetaRow">
+                            <span>Child Register No: <strong id="metaChildReg">21CS101</strong></span> &bull;
+                            <span>Language: <strong id="metaLang">TA</strong></span> &bull;
+                            <span>Registered Mobile: <strong id="metaPhone">+91 98765 43210</strong></span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-primary btn-lg" onclick="openSmsSettingsModal()" style="background: #ffffff; color: #1e40af; font-weight: 700; box-shadow: 0 4px 14px rgba(0,0,0,0.25); border: none; font-size: 0.95rem; padding: 0.75rem 1.4rem; cursor: pointer;">
+                        📱 Phone & Gateway Settings ⚙️
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats Cards -->
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-blue">📄</div>
+                <div class="stat-content">
+                    <h3 id="parentStatTotal">0</h3>
+                    <p>Total Applications</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-yellow">⏳</div>
+                <div class="stat-content">
+                    <h3 id="parentStatPending">0</h3>
+                    <p>Awaiting My Approval</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-green">✅</div>
+                <div class="stat-content">
+                    <h3 id="parentStatApproved">0</h3>
+                    <p>Verified & Authorized</p>
                 </div>
             </div>
         </div>
@@ -386,6 +417,14 @@
                 if (leaves.length === 0) {
                     leaves = allLeaves || [];
                 }
+
+                // Update Stat Counts
+                const totalEl = document.getElementById('parentStatTotal');
+                if (totalEl) totalEl.textContent = leaves.length;
+                const pendingEl = document.getElementById('parentStatPending');
+                if (pendingEl) pendingEl.textContent = leaves.filter(l => l.status === 'Waiting for Parent' || l.current_stage === 'parent').length;
+                const approvedEl = document.getElementById('parentStatApproved');
+                if (approvedEl) approvedEl.textContent = leaves.filter(l => (l.status || '').includes('Parent Approved') || (l.status || '').includes('Advisor Approved') || (l.status || '').includes('Waiting for Warden') || (l.status || '').toLowerCase().includes('completed')).length;
 
                 const tbody = document.getElementById('parentTableBody');
                 if (!tbody) return;

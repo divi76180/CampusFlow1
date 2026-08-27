@@ -35,13 +35,42 @@
     <main class="container">
 
         <!-- Profile Banner -->
-        <div class="profile-banner" style="background: linear-gradient(135deg, #0f172a 0%, #4c1d95 100%);">
-            <div class="profile-avatar" style="background: #7c3aed;" id="hodInitials">KM</div>
-            <div class="profile-details">
-                <h1 id="hodFullName">Head of Department Portal</h1>
-                <div class="profile-meta-row" id="hodMetaRow">
-                    <span>Department of Computer Science & Engineering</span> &bull;
-                    <span>Institutional Authorization</span>
+        <div class="profile-banner-card" style="background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);">
+            <div class="profile-banner-grid">
+                <div style="display: flex; align-items: center; gap: 1.25rem;">
+                    <div class="user-avatar" style="width: 54px; height: 54px; font-size: 1.3rem; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700;" id="hodInitials">KM</div>
+                    <div class="profile-main-details">
+                        <h1 id="hodFullName">Head of Department Portal</h1>
+                        <div class="profile-meta-tags" id="hodMetaRow">
+                            <span>Department of Computer Science & Engineering</span> &bull;
+                            <span>Institutional Authorization</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats Cards -->
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-blue">🏛️</div>
+                <div class="stat-content">
+                    <h3 id="hodStatTotal">0</h3>
+                    <p>Total Department Requests</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-yellow">⏳</div>
+                <div class="stat-content">
+                    <h3 id="hodStatReady">0</h3>
+                    <p>Awaiting My Sanction</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-green">✅</div>
+                <div class="stat-content">
+                    <h3 id="hodStatCompleted">0</h3>
+                    <p>Sanctioned / Completed</p>
                 </div>
             </div>
         </div>
@@ -133,6 +162,14 @@
                 const leaves = await CampusDB.getAllLeaves();
                 const tbody = document.getElementById('hodTableBody');
                 if (!tbody) return;
+
+                const allLeaves = leaves || [];
+                const totalEl = document.getElementById('hodStatTotal');
+                if (totalEl) totalEl.textContent = allLeaves.length;
+                const readyEl = document.getElementById('hodStatReady');
+                if (readyEl) readyEl.textContent = allLeaves.filter(l => l.status === 'Advisor Approved (Waiting for HOD)' || l.current_stage === 'hod').length;
+                const completedEl = document.getElementById('hodStatCompleted');
+                if (completedEl) completedEl.textContent = allLeaves.filter(l => (l.status || '').toLowerCase().includes('completed') || (l.status || '').includes('Waiting for Warden')).length;
 
                 if (!leaves || leaves.length === 0) {
                     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:3rem; color:#94a3b8;">No leave requests found in Supabase.</td></tr>`;
