@@ -122,14 +122,24 @@
             if (!currentUser) return;
 
             const prof = currentUser.profile || {};
-            const fullName = prof.full_name || currentUser.username;
-            document.getElementById('wardenDisplayName').textContent = `${fullName} (Chief Warden)`;
-            document.getElementById('wardenFullName').textContent = fullName;
-            document.getElementById('wardenInitials').textContent = fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-            document.getElementById('wardenMetaRow').innerHTML = `
-                <span><strong>Faculty ID:</strong> ${prof.faculty_id || 'WARDEN-BH-01'}</span> &bull;
-                <span><strong>Hostel Block:</strong> ${prof.hostel_block || 'Kaveri Boys Hostel'}</span>
-            `;
+            const fullName = prof.full_name || currentUser.username || 'Warden';
+            
+            const dispEl = document.getElementById('wardenDisplayName');
+            if (dispEl) dispEl.textContent = `${fullName} (Chief Warden)`;
+            
+            const nameEl = document.getElementById('wardenFullName');
+            if (nameEl) nameEl.textContent = fullName;
+            
+            const initEl = document.getElementById('wardenInitials');
+            if (initEl) initEl.textContent = fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            
+            const metaEl = document.getElementById('wardenMetaRow');
+            if (metaEl) {
+                metaEl.innerHTML = `
+                    <span><strong>Faculty ID:</strong> ${prof.faculty_id || 'WARDEN-BH-01'}</span> &bull;
+                    <span><strong>Hostel Block:</strong> ${prof.hostel_block || 'Kaveri Boys Hostel'}</span>
+                `;
+            }
 
             await loadWardenLeaves();
         });
@@ -222,17 +232,33 @@
         }
 
         async function viewLeaveLetterDirect(leaveId) {
-            const data = await CampusDB.getLeaveDetails(leaveId);
-            if (!data) return;
-            renderLeaveLetterModal(data);
-            openModal('leaveLetterModal');
+            try {
+                const data = await CampusDB.getLeaveDetails(leaveId);
+                if (!data) {
+                    alert('Could not load leave details for ID #' + leaveId);
+                    return;
+                }
+                renderLeaveLetterModal(data);
+                openModal('leaveLetterModal');
+            } catch (err) {
+                console.error('viewLeaveLetterDirect error:', err);
+                alert('Error loading leave letter: ' + err.message);
+            }
         }
 
         async function viewHostelOutpassDirect(leaveId) {
-            const data = await CampusDB.getLeaveDetails(leaveId);
-            if (!data) return;
-            renderHostelOutpassModal(data);
-            openModal('hostelOutpassModal');
+            try {
+                const data = await CampusDB.getLeaveDetails(leaveId);
+                if (!data) {
+                    alert('Could not load outpass details for ID #' + leaveId);
+                    return;
+                }
+                renderHostelOutpassModal(data);
+                openModal('hostelOutpassModal');
+            } catch (err) {
+                console.error('viewHostelOutpassDirect error:', err);
+                alert('Error loading outpass: ' + err.message);
+            }
         }
     </script>
 </body>

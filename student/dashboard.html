@@ -36,10 +36,13 @@
         <!-- Welcome Banner -->
         <div class="profile-banner-card">
             <div class="profile-banner-grid">
-                <div class="profile-main-details">
-                    <h1 id="userFullName">Student Portal</h1>
-                    <div class="profile-meta-tags" id="userMetaRow">
-                        <span class="meta-pill">Department of Computer Science & Engineering</span>
+                <div style="display: flex; align-items: center; gap: 1.25rem;">
+                    <div class="user-avatar" style="width: 52px; height: 52px; font-size: 1.25rem; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700;" id="userInitials">RS</div>
+                    <div class="profile-main-details">
+                        <h1 id="userFullName">Student Portal</h1>
+                        <div class="profile-meta-tags" id="userMetaRow">
+                            <span class="meta-pill">Department of Computer Science & Engineering</span>
+                        </div>
                     </div>
                 </div>
                 <div>
@@ -229,39 +232,67 @@
             currentUser = CampusDB.requireAuth(['student']);
             if (!currentUser) return;
 
-            // Render Profile info
+            // Render Profile info safely
             const prof = currentUser.profile || {};
-            const fullName = prof.full_name || currentUser.username;
-            document.getElementById('userDisplayName').textContent = `${fullName} (${prof.register_number || currentUser.username})`;
-            document.getElementById('userFullName').textContent = fullName;
-            document.getElementById('userInitials').textContent = fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-            document.getElementById('userHostelPill').textContent = (prof.hostel_status || 'day_scholar').replace('_', ' ');
+            const fullName = prof.full_name || currentUser.username || 'Student';
+            
+            const dispNameEl = document.getElementById('userDisplayName');
+            if (dispNameEl) dispNameEl.textContent = `${fullName} (${prof.register_number || currentUser.username})`;
+            
+            const fullNameEl = document.getElementById('userFullName');
+            if (fullNameEl) fullNameEl.textContent = fullName;
+            
+            const initialsEl = document.getElementById('userInitials');
+            if (initialsEl) initialsEl.textContent = fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            
+            const hostelPillEl = document.getElementById('userHostelPill');
+            if (hostelPillEl) hostelPillEl.textContent = (prof.hostel_status || 'day_scholar').replace('_', ' ');
 
-            document.getElementById('userMetaRow').innerHTML = `
-                <span><strong>Register No:</strong> ${prof.register_number || 'N/A'}</span> &bull;
-                <span><strong>Dept:</strong> ${prof.department || 'Engineering'} (${prof.year || 3}-${prof.section || 'A'})</span> &bull;
-                <span><strong>Hostel:</strong> ${prof.hostel_status === 'hosteller' ? (prof.room_number || 'Room BH-304') : 'Day Scholar'}</span>
-            `;
+            const metaRowEl = document.getElementById('userMetaRow');
+            if (metaRowEl) {
+                metaRowEl.innerHTML = `
+                    <span><strong>Register No:</strong> ${prof.register_number || currentUser.username || 'N/A'}</span> &bull;
+                    <span><strong>Dept:</strong> ${prof.department || 'Engineering'} (${prof.year || 3}-${prof.section || 'A'})</span> &bull;
+                    <span><strong>Hostel:</strong> ${prof.hostel_status === 'hosteller' ? (prof.room_number || 'Room BH-304') : 'Day Scholar'}</span>
+                `;
+            }
 
             // Default dates
             const tmrw = new Date(Date.now() + 86400000).toISOString().split('T')[0];
             const endd = new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0];
-            document.getElementById('inputFromDate').value = tmrw;
-            document.getElementById('inputToDate').value = endd;
-            document.getElementById('inputEmergencyContact').value = currentUser.phone || '';
+            const fromDateEl = document.getElementById('inputFromDate');
+            if (fromDateEl) fromDateEl.value = tmrw;
+            const toDateEl = document.getElementById('inputToDate');
+            if (toDateEl) toDateEl.value = endd;
+            const emContactEl = document.getElementById('inputEmergencyContact');
+            if (emContactEl) emContactEl.value = currentUser.phone || '';
 
             await loadLeaves();
         });
 
         async function loadLeaves() {
-            const studentId = currentUser.profile?.id || 1;
-            const leaves = await CampusDB.getStudentLeaves(studentId);
+            const studentId = currentUser.profile?.id || currentUser.id || 1;
+            let leaves = await CampusDB.getStudentLeaves(studentId);
 
-            document.getElementById('statTotalLeaves').textContent = leaves.length;
+            // If empty, also check with all leaves as fallback
+            if ((!leaves || leaves.length === 0) && currentUser.profile?.register_number) {
+                const allLeaves = await CampusDB.getAllLeaves();
+                leaves = allLeaves.filter(l => l.students?.register_number === currentUser.profile.register_number || l.student_id === studentId);
+            }
+
+            leaves = leaves || [];
+
+            const statTotal = document.getElementById('statTotalLeaves');
+            if (statTotal) statTotal.textContent = leaves.length;
+            
             const pending = leaves.filter(l => !l.status.toLowerCase().includes('completed') && !l.status.toLowerCase().includes('rejected')).length;
             const approved = leaves.filter(l => l.status.toLowerCase().includes('completed')).length;
-            document.getElementById('statPendingLeaves').textContent = pending;
-            document.getElementById('statApprovedLeaves').textContent = approved;
+            
+            const statPending = document.getElementById('statPendingLeaves');
+            if (statPending) statPending.textContent = pending;
+            
+            const statApproved = document.getElementById('statApprovedLeaves');
+            if (statApproved) statApproved.textContent = approved;
 
             const tbody = document.getElementById('leavesTableBody');
             if (leaves.length === 0) {
@@ -361,17 +392,33 @@
         });
 
         async function viewLeaveLetterDirect(leaveId) {
-            const data = await CampusDB.getLeaveDetails(leaveId);
-            if (!data) { alert('Could not load leave details.'); return; }
-            renderLeaveLetterModal(data);
-            openModal('leaveLetterModal');
+            try {
+                const data = await CampusDB.getLeaveDetails(leaveId);
+                if (!data) {
+                    alert('Could not load leave details for ID #' + leaveId);
+                    return;
+                }
+                renderLeaveLetterModal(data);
+                openModal('leaveLetterModal');
+            } catch (err) {
+                console.error('viewLeaveLetterDirect error:', err);
+                alert('Error viewing leave letter: ' + err.message);
+            }
         }
 
         async function viewHostelOutpassDirect(leaveId) {
-            const data = await CampusDB.getLeaveDetails(leaveId);
-            if (!data) { alert('Could not load outpass details.'); return; }
-            renderHostelOutpassModal(data);
-            openModal('hostelOutpassModal');
+            try {
+                const data = await CampusDB.getLeaveDetails(leaveId);
+                if (!data) {
+                    alert('Could not load outpass details for ID #' + leaveId);
+                    return;
+                }
+                renderHostelOutpassModal(data);
+                openModal('hostelOutpassModal');
+            } catch (err) {
+                console.error('viewHostelOutpassDirect error:', err);
+                alert('Error viewing hostel outpass: ' + err.message);
+            }
         }
     </script>
 </body>

@@ -56,36 +56,44 @@ function closeModal(modalId) {
 }
 
 function renderLeaveLetterModal(data) {
-    const leave = data.leave;
+    if (!data) return;
+    const leave = data.leave || data || {};
     const approvals = data.approvals || [];
     const voiceVerif = data.voice_verification;
 
     const letterContainer = document.getElementById('letterheadContent');
     if (!letterContainer) return;
 
-    const fromDateFormatted = new Date(leave.from_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    const toDateFormatted = new Date(leave.to_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const fromDateFormatted = leave.from_date ? new Date(leave.from_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
+    const toDateFormatted = leave.to_date ? new Date(leave.to_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
     const createdFormatted = new Date(leave.created_at || Date.now()).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    const stdName = leave.student_name || leave.students?.full_name || 'Student';
+    const regNo = leave.register_number || leave.students?.register_number || 'N/A';
+    const dept = leave.department || leave.students?.department || 'Engineering';
+    const yr = leave.year || leave.students?.year || 3;
+    const sec = leave.section || leave.students?.section || 'A';
+    const hostelSt = (leave.hostel_status || leave.students?.hostel_status || 'day_scholar').replace('_', ' ');
+    const statusText = leave.status || 'Pending';
 
     letterContainer.innerHTML = `
         <div class="letterhead-doc">
             <div class="letterhead-header">
                 <h2>CampusFlow Digital Leave Portal</h2>
-                <p>Department of ${leave.department || 'Engineering'} | Official Authorization Form</p>
+                <p>Department of ${escapeHtml(dept)} | Official Authorization Form</p>
             </div>
 
             <div class="letterhead-meta">
                 <div>
                     <strong>Date Submitted:</strong> ${createdFormatted}<br>
-                    <strong>Student Name:</strong> ${leave.student_name} (${leave.register_number})<br>
-                    <strong>Department & Year:</strong> ${leave.department} - Year ${leave.year || '3'}, Sec ${leave.section || 'A'}<br>
-                    <strong>Hostel Status:</strong> <span style="text-transform:capitalize; font-weight:700;">${(leave.hostel_status || '').replace('_', ' ')}</span>
+                    <strong>Student Name:</strong> ${escapeHtml(stdName)} (${escapeHtml(regNo)})<br>
+                    <strong>Department & Year:</strong> ${escapeHtml(dept)} - Year ${yr}, Sec ${sec}<br>
+                    <strong>Hostel Status:</strong> <span style="text-transform:capitalize; font-weight:700;">${escapeHtml(hostelSt)}</span>
                 </div>
                 <div>
-                    <strong>Parent / Guardian:</strong> ${leave.parent_name || 'N/A'}<br>
-                    <strong>Emergency Contact:</strong> ${leave.emergency_contact || leave.parent_phone || 'N/A'}<br>
-                    <strong>Leave Category:</strong> <span style="color:#1e40af; font-weight:700;">${leave.leave_type}</span><br>
-                    <strong>Current Status:</strong> <span class="status-badge ${getStatusClass(leave.status)}">${leave.status}</span>
+                    <strong>Parent / Guardian:</strong> ${escapeHtml(leave.parent_name || 'Parent')}<br>
+                    <strong>Emergency Contact:</strong> ${escapeHtml(leave.emergency_contact || leave.parent_phone || 'N/A')}<br>
+                    <strong>Leave Category:</strong> <span style="color:#1e40af; font-weight:700;">${escapeHtml(leave.leave_type || 'Leave Request')}</span><br>
+                    <strong>Current Status:</strong> <span class="status-badge ${getStatusClass(statusText)}">${escapeHtml(statusText)}</span>
                 </div>
             </div>
 
@@ -94,28 +102,28 @@ function renderLeaveLetterModal(data) {
                 <br>
                 <p><strong>Respected Sir / Madam,</strong></p>
                 <p>
-                    I, <strong>${leave.student_name}</strong> (Register No: <strong>${leave.register_number}</strong>), studying in the Department of ${leave.department}, kindly request you to grant me leave from <strong>${fromDateFormatted}</strong> (${leave.from_time || '08:00 AM'}) to <strong>${toDateFormatted}</strong> (${leave.to_time || '06:00 PM'}).
+                    I, <strong>${escapeHtml(stdName)}</strong> (Register No: <strong>${escapeHtml(regNo)}</strong>), studying in the Department of ${escapeHtml(dept)}, kindly request you to grant me leave from <strong>${fromDateFormatted}</strong> (${leave.from_time ? leave.from_time.substring(0,5) : '08:00 AM'}) to <strong>${toDateFormatted}</strong> (${leave.to_time ? leave.to_time.substring(0,5) : '06:00 PM'}).
                 </p>
                 <br>
                 <p>
                     <strong>Reason for Leave:</strong><br>
-                    <em>"${escapeHtml(leave.reason)}"</em>
+                    <em>"${escapeHtml(leave.reason || 'N/A')}"</em>
                 </p>
                 <br>
                 <p>
                     <strong>Destination Address during Leave:</strong><br>
-                    ${escapeHtml(leave.destination_address)}
+                    ${escapeHtml(leave.destination_address || 'N/A')}
                 </p>
             </div>
 
             <div class="letterhead-footer">
                 <div>
                     <strong>Parent Voice Verification:</strong><br>
-                    ${voiceVerif && voiceVerif.is_verified ? `✅ Verified (Score: ${voiceVerif.match_score}%)` : (leave.status.includes('Parent Approved') ? '✅ Verified by Parent' : '⏳ Pending Parent Confirmation')}
+                    ${voiceVerif && voiceVerif.is_verified ? `✅ Verified (Score: ${voiceVerif.match_score}%)` : (statusText.includes('Parent Approved') ? '✅ Verified by Parent' : '⏳ Pending Parent Confirmation')}
                 </div>
                 <div style="text-align: right;">
                     <strong>Student Signature:</strong><br>
-                    <span style="font-family:cursive; font-size:1.1rem; color:#1e3a8a;">${leave.student_name}</span>
+                    <span style="font-family:cursive; font-size:1.1rem; color:#1e3a8a;">${escapeHtml(stdName)}</span>
                 </div>
             </div>
         </div>
@@ -129,16 +137,22 @@ function renderLeaveLetterModal(data) {
 }
 
 function renderHostelOutpassModal(data) {
-    const leave = data.leave;
+    if (!data) return;
+    const leave = data.leave || data || {};
     const container = document.getElementById('outpassModalContent');
     if (!container) return;
 
-    const fromDateFormatted = new Date(leave.from_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    const toDateFormatted = new Date(leave.to_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const fromDateFormatted = leave.from_date ? new Date(leave.from_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
+    const toDateFormatted = leave.to_date ? new Date(leave.to_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
     const fromTime = leave.from_time ? leave.from_time.substring(0, 5) : '08:00';
     const toTime = leave.to_time ? leave.to_time.substring(0, 5) : '18:00';
+    const stdName = leave.student_name || leave.students?.full_name || 'Hosteller';
+    const regNo = leave.register_number || leave.students?.register_number || 'N/A';
+    const dept = leave.department || leave.students?.department || 'Engineering';
+    const yr = leave.year || leave.students?.year || 3;
+    const sec = leave.section || leave.students?.section || 'A';
 
-    const securityUrl = `${window.location.origin}/security_gate.html?pass_id=${leave.id}&reg=${encodeURIComponent(leave.register_number)}&status=VALID`;
+    const securityUrl = `${window.location.origin}/security_gate.html?pass_id=${leave.id}&reg=${encodeURIComponent(regNo)}&status=VALID`;
 
     container.innerHTML = `
         <div class="outpass-container" id="printableOutpassCard">

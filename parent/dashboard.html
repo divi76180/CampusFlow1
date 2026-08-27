@@ -160,14 +160,24 @@
             if (!currentUser) return;
 
             const prof = currentUser.profile || {};
-            const fullName = prof.full_name || currentUser.username;
-            document.getElementById('parentDisplayName').textContent = `${fullName} (${prof.phone_number || currentUser.phone})`;
-            document.getElementById('parentFullName').textContent = fullName;
-            document.getElementById('parentInitials').textContent = fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-            document.getElementById('parentMetaRow').innerHTML = `
-                <span><strong>Child Register No:</strong> ${prof.student_reg_no || '21CS101'}</span> &bull;
-                <span><strong>Preferred Language:</strong> ${prof.preferred_language?.toUpperCase() || 'TA'}</span>
-            `;
+            const fullName = prof.full_name || currentUser.username || 'Parent';
+            
+            const dispEl = document.getElementById('parentDisplayName');
+            if (dispEl) dispEl.textContent = `${fullName} (${prof.phone_number || currentUser.phone || ''})`;
+            
+            const nameEl = document.getElementById('parentFullName');
+            if (nameEl) nameEl.textContent = fullName;
+            
+            const initEl = document.getElementById('parentInitials');
+            if (initEl) initEl.textContent = fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            
+            const metaEl = document.getElementById('parentMetaRow');
+            if (metaEl) {
+                metaEl.innerHTML = `
+                    <span><strong>Child Register No:</strong> ${prof.student_reg_no || '21CS101'}</span> &bull;
+                    <span><strong>Preferred Language:</strong> ${prof.preferred_language?.toUpperCase() || 'TA'}</span>
+                `;
+            }
 
             await loadParentLeaves();
         });
@@ -241,22 +251,41 @@
         }
 
         async function viewLeaveLetterDirect(leaveId) {
-            const data = await CampusDB.getLeaveDetails(leaveId);
-            if (!data) return;
-            renderLeaveLetterModal(data);
-            openModal('leaveLetterModal');
+            try {
+                const data = await CampusDB.getLeaveDetails(leaveId);
+                if (!data) {
+                    alert('Could not load leave details for ID #' + leaveId);
+                    return;
+                }
+                renderLeaveLetterModal(data);
+                openModal('leaveLetterModal');
 
-            document.getElementById('btnListenLetterModal').onclick = () => {
-                const lang = currentUser.profile?.preferred_language || 'ta';
-                window.CampusTTS.speakLetter(data.leave, lang);
-            };
+                const listenBtn = document.getElementById('btnListenLetterModal');
+                if (listenBtn) {
+                    listenBtn.onclick = () => {
+                        const lang = currentUser.profile?.preferred_language || 'ta';
+                        window.CampusTTS.speakLetter(data.leave, lang);
+                    };
+                }
+            } catch (err) {
+                console.error('viewLeaveLetterDirect error:', err);
+                alert('Error loading leave letter: ' + err.message);
+            }
         }
 
         async function listenToLetterDirect(leaveId) {
-            const data = await CampusDB.getLeaveDetails(leaveId);
-            if (!data) return;
-            const lang = currentUser.profile?.preferred_language || 'ta';
-            window.CampusTTS.speakLetter(data.leave, lang);
+            try {
+                const data = await CampusDB.getLeaveDetails(leaveId);
+                if (!data) {
+                    alert('Could not load leave details for ID #' + leaveId);
+                    return;
+                }
+                const lang = currentUser.profile?.preferred_language || 'ta';
+                window.CampusTTS.speakLetter(data.leave, lang);
+            } catch (err) {
+                console.error('listenToLetterDirect error:', err);
+                alert('Error playing voice: ' + err.message);
+            }
         }
 
         function openVoiceModalDirect(leaveId, studentName, regNo) {

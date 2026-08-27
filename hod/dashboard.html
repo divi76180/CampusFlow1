@@ -105,15 +105,25 @@
             if (!currentUser) return;
 
             const prof = currentUser.profile || {};
-            const fullName = prof.full_name || currentUser.username;
-            document.getElementById('hodDisplayName').textContent = `${fullName} (HOD)`;
-            document.getElementById('hodFullName').textContent = fullName;
-            document.getElementById('hodInitials').textContent = fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-            document.getElementById('hodMetaRow').innerHTML = `
-                <span><strong>Faculty ID:</strong> ${prof.faculty_id || 'HOD-CSE-01'}</span> &bull;
-                <span><strong>Designation:</strong> Head of Department</span> &bull;
-                <span><strong>Dept:</strong> ${prof.department || 'CSE'}</span>
-            `;
+            const fullName = prof.full_name || currentUser.username || 'HOD';
+            
+            const dispEl = document.getElementById('hodDisplayName');
+            if (dispEl) dispEl.textContent = `${fullName} (HOD)`;
+            
+            const nameEl = document.getElementById('hodFullName');
+            if (nameEl) nameEl.textContent = fullName;
+            
+            const initEl = document.getElementById('hodInitials');
+            if (initEl) initEl.textContent = fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            
+            const metaEl = document.getElementById('hodMetaRow');
+            if (metaEl) {
+                metaEl.innerHTML = `
+                    <span><strong>Faculty ID:</strong> ${prof.faculty_id || 'HOD-CSE-01'}</span> &bull;
+                    <span><strong>Designation:</strong> Head of Department</span> &bull;
+                    <span><strong>Dept:</strong> ${prof.department || 'CSE'}</span>
+                `;
+            }
 
             await loadHodLeaves();
         });
@@ -204,10 +214,18 @@
         }
 
         async function viewLeaveLetterDirect(leaveId) {
-            const data = await CampusDB.getLeaveDetails(leaveId);
-            if (!data) return;
-            renderLeaveLetterModal(data);
-            openModal('leaveLetterModal');
+            try {
+                const data = await CampusDB.getLeaveDetails(leaveId);
+                if (!data) {
+                    alert('Could not load leave details for ID #' + leaveId);
+                    return;
+                }
+                renderLeaveLetterModal(data);
+                openModal('leaveLetterModal');
+            } catch (err) {
+                console.error('viewLeaveLetterDirect error:', err);
+                alert('Error loading leave letter: ' + err.message);
+            }
         }
     </script>
 </body>

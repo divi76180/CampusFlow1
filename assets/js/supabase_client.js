@@ -122,78 +122,133 @@
     async function getStudentLeaves(studentId) {
         const sb = initClient();
         if (!sb) return [];
-        const { data, error } = await sb
-            .from('leave_requests')
-            .select('*')
-            .eq('student_id', studentId)
-            .order('id', { ascending: false });
-        if (error) { console.error(error); return []; }
-        return data || [];
+        try {
+            const { data, error } = await sb
+                .from('leave_requests')
+                .select('*')
+                .eq('student_id', studentId)
+                .order('id', { ascending: false });
+            if (error) {
+                console.error('getStudentLeaves error:', error);
+                return [];
+            }
+            return data || [];
+        } catch (err) {
+            console.error('getStudentLeaves exception:', err);
+            return [];
+        }
     }
 
     async function getAllLeaves() {
         const sb = initClient();
         if (!sb) return [];
-        const { data, error } = await sb
-            .from('leave_requests')
-            .select(`
-                *,
-                students (
-                    id, register_number, full_name, department, year, section, hostel_status, room_number, parent_id
-                )
-            `)
-            .order('id', { ascending: false });
-        if (error) { console.error(error); return []; }
-        return data || [];
+        try {
+            const { data, error } = await sb
+                .from('leave_requests')
+                .select(`
+                    *,
+                    students (
+                        id, register_number, full_name, department, year, section, hostel_status, room_number, parent_id
+                    )
+                `)
+                .order('id', { ascending: false });
+
+            if (error || !data) {
+                console.warn('getAllLeaves with join failed, trying fallback direct query:', error);
+                const { data: rawLeaves, error: rawErr } = await sb
+                    .from('leave_requests')
+                    .select('*')
+                    .order('id', { ascending: false });
+                
+                if (rawErr || !rawLeaves) return [];
+
+                // Fetch all students to map
+                const { data: allStudents } = await sb.from('students').select('*');
+                const studentMap = {};
+                (allStudents || []).forEach(s => { studentMap[s.id] = s; });
+
+                return rawLeaves.map(l => ({
+                    ...l,
+                    students: studentMap[l.student_id] || null
+                }));
+            }
+            return data || [];
+        } catch (err) {
+            console.error('getAllLeaves exception:', err);
+            return [];
+        }
     }
 
     async function getLeaveDetails(leaveId) {
         const sb = initClient();
         if (!sb) return null;
         
-        const { data: leaves, error } = await sb
-            .from('leave_requests')
-            .select(`
-                *,
-                students (
-                    id, register_number, full_name, department, year, section, hostel_status, room_number, parent_id
-                )
-            `)
-            .eq('id', leaveId)
-            .limit(1);
+        try {
+            let leave = null;
+            const { data: leaves, error } = await sb
+                .from('leave_requests')
+                .select(`
+                    *,
+                    students (
+                        id, register_number, full_name, department, year, section, hostel_status, room_number, parent_id
+                    )
+                `)
+                .eq('id', leaveId)
+                .limit(1);
 
-        if (error || !leaves || leaves.length === 0) return null;
-        const leave = leaves[0];
+            if (!error && leaves && leaves.length > 0) {
+                leave = leaves[0];
+            } else {
+                // Direct fallback query if join returned error
+                const { data: rawLeaves } = await sb.from('leave_requests').select('*').eq('id', leaveId).limit(1);
+                if (rawLeaves && rawLeaves.length > 0) {
+                    leave = rawLeaves[0];
+                    if (leave.student_id) {
+                        const { data: stdData } = await sb.from('students').select('*').eq('id', leave.student_id).limit(1);
+                        leave.students = stdData && stdData.length > 0 ? stdData[0] : null;
+                    }
+                }
+            }
 
-        // Fetch parent details
-        let parent = null;
-        if (leave.students && leave.students.parent_id) {
-            const { data: par } = await sb.from('parents').select('*').eq('id', leave.students.parent_id).limit(1);
-            parent = par ? par[0] : null;
+            if (!leave) return null;
+
+            // Fetch parent details
+            let parent = null;
+            if (leave.students && leave.students.parent_id) {
+                const { data: par } = await sb.from('parents').select('*').eq('id', leave.students.parent_id).limit(1);
+                parent = par && par.length > 0 ? par[0] : null;
+            }
+            if (!parent && leave.students?.register_number) {
+                const { data: parByReg } = await sb.from('parents').select('*').eq('student_reg_no', leave.students.register_number).limit(1);
+                parent = parByReg && parByReg.length > 0 ? parByReg[0] : null;
+            }
+
+            // Fetch approvals
+            const { data: approvals } = await sb.from('approvals').select('*').eq('leave_id', leaveId).order('id', { ascending: true });
+
+            // Fetch voice verification
+            const { data: voiceVerifs } = await sb.from('voice_verifications').select('*').eq('leave_id', leaveId).limit(1);
+
+            return {
+                leave: {
+                    ...leave,
+                    student_name: leave.students?.full_name || 'Student',
+                    register_number: leave.students?.register_number || 'N/A',
+                    department: leave.students?.department || 'Engineering',
+                    year: leave.students?.year || 3,
+                    section: leave.students?.section || 'A',
+                    hostel_status: leave.students?.hostel_status || 'day_scholar',
+                    parent_name: parent?.full_name || '',
+                    parent_phone: parent?.phone_number || leave.emergency_contact || '',
+                    preferred_language: parent?.preferred_language || 'ta'
+                },
+                approvals: approvals || [],
+                voice_verification: voiceVerifs && voiceVerifs.length > 0 ? voiceVerifs[0] : null
+            };
+        } catch (err) {
+            console.error('getLeaveDetails error:', err);
+            return null;
         }
-
-        // Fetch approvals
-        const { data: approvals } = await sb.from('approvals').select('*').eq('leave_id', leaveId).order('id', { ascending: true });
-
-        // Fetch voice verification
-        const { data: voiceVerifs } = await sb.from('voice_verifications').select('*').eq('leave_id', leaveId).limit(1);
-
-        return {
-            leave: {
-                ...leave,
-                student_name: leave.students?.full_name || 'Student',
-                register_number: leave.students?.register_number || '',
-                department: leave.students?.department || '',
-                year: leave.students?.year || 3,
-                section: leave.students?.section || 'A',
-                hostel_status: leave.students?.hostel_status || 'day_scholar',
-                parent_name: parent?.full_name || '',
-                parent_phone: parent?.phone_number || '',
-                preferred_language: parent?.preferred_language || 'ta'
-            },
-            approvals: approvals || [],
-            voice_verification: voiceVerifs ? voiceVerifs[0] : null
-        };
     }
 
     async function submitLeaveRequest(formData) {
