@@ -54,7 +54,7 @@
         <div class="section-toolbar">
             <h2>Ward Leave Requests</h2>
             <div style="font-size:0.85rem; color:#64748b;">
-                📱 Instant SMS OTP Verification: <strong>6-digit secure authentication delivered to registered mobile</strong>
+                📱 Instant SMS OTP Verification &amp; Authorization Control
             </div>
         </div>
 
@@ -70,7 +70,7 @@
                             <th>Reason</th>
                             <th>Destination</th>
                             <th>Status</th>
-                            <th style="text-align: center; width: 300px;">Verification Action</th>
+                            <th style="text-align: center; width: 330px;">Verification Action</th>
                         </tr>
                     </thead>
                     <tbody id="parentTableBody">
@@ -94,11 +94,22 @@
                 <button type="button" class="modal-close" data-modal-close>&times;</button>
             </div>
             <div class="modal-body" id="letterheadContent"></div>
-            <div class="modal-footer" style="justify-content: space-between;">
-                <button type="button" class="btn btn-voice" id="btnListenLetterModal">
-                    🔊 Listen to Application (Audio TTS)
-                </button>
-                <button type="button" class="btn btn-secondary" data-modal-close>Close</button>
+            <div class="modal-footer" style="justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+                <div>
+                    <button type="button" class="btn btn-voice" id="btnListenLetterModal">
+                        🔊 Listen to Application (Audio TTS)
+                    </button>
+                </div>
+                <div style="display:flex; gap:0.4rem; align-items:center;">
+                    <!-- Second Reject Option: Direct from Letter View -->
+                    <button type="button" class="btn btn-danger btn-sm" id="btnLetterModalReject" style="display:none;">
+                        ✗ Reject Letter
+                    </button>
+                    <button type="button" class="btn btn-primary btn-sm" id="btnLetterModalApprove" style="display:none;">
+                        📱 OTP Approve
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-modal-close>Close</button>
+                </div>
             </div>
         </div>
     </div>
@@ -158,6 +169,49 @@
                 <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
                 <button type="submit" class="btn btn-primary" id="btnSubmitOtpApproval" onclick="submitOtpApprovalSupabase()">
                     Verify OTP & Confirm Approval →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Parent Leave Rejection Confirmation (2-Step Safety) -->
+    <div class="modal-overlay" id="parentRejectModal">
+        <div class="modal-box" style="max-width: 520px;">
+            <div class="modal-header">
+                <h3 style="color:#dc2626;">✗ Reject Leave Application</h3>
+                <button type="button" class="modal-close" data-modal-close>&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem;">
+                        <span style="color: #64748b; font-size: 0.85rem;">Student Ward:</span>
+                        <strong id="rejectTargetStudent" style="color: #991b1b;">Student Name</strong>
+                    </div>
+                    <div style="font-size: 0.82rem; color: #b91c1c; margin-top: 0.35rem; line-height: 1.4;">
+                        ⚠️ Declining this leave request will halt the approval process. The student and department advisor will be notified.
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Reason for Rejection *</label>
+                    <select id="rejectReasonSelect" class="form-control form-select">
+                        <option value="Upcoming academic tests and semester examinations">Upcoming academic tests and semester examinations</option>
+                        <option value="Attendance shortage warning from department">Attendance shortage warning from department</option>
+                        <option value="Family permission not granted for travel">Family permission not granted for travel</option>
+                        <option value="Insufficient or invalid reason provided">Insufficient or invalid reason provided</option>
+                        <option value="Other domestic/personal reasons">Other domestic/personal reasons</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-top: 0.75rem;">
+                    <label class="form-label">Parent Comments / Advice to Ward (Optional)</label>
+                    <input type="text" id="rejectCustomReasonInput" class="form-control" placeholder="e.g. Please concentrate on semester tests this week.">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+                <button type="button" class="btn btn-danger" id="btnConfirmParentReject" onclick="submitParentRejectionSupabase()">
+                    ✗ Confirm Rejection (Final)
                 </button>
             </div>
         </div>
@@ -267,7 +321,6 @@
         }
 
         function openSmsSettingsModal() {
-            const prof = currentUser.profile || {};
             const phoneInput = document.getElementById('settingPhoneNumber');
             if (phoneInput) phoneInput.value = activeParentPhone || '9876543210';
 
@@ -367,7 +420,7 @@
                                 </span>
                             </td>
                             <td style="text-align:center;">
-                                <div style="display:inline-flex; gap:0.4rem; flex-wrap:wrap; justify-content:center;">
+                                <div style="display:inline-flex; gap:0.35rem; flex-wrap:wrap; justify-content:center; align-items:center;">
                                     <button type="button" class="btn btn-secondary btn-sm" onclick="viewLeaveLetterDirect(${l.id})">
                                         📄 View
                                     </button>
@@ -375,12 +428,18 @@
                                         🔊 Listen
                                     </button>
                                     ${isPendingParent ? `
+                                        <!-- Option 1: Direct Table Approve & Reject Options -->
                                         <button type="button" class="btn btn-primary btn-sm" onclick="openOtpModalDirect(${l.id}, '${escapeHtml(stdName)}', '${escapeHtml(regNo)}')">
                                             📱 OTP Approve
                                         </button>
+                                        <button type="button" class="btn btn-danger btn-sm" onclick="openParentRejectModalDirect(${l.id}, '${escapeHtml(stdName)}', '${escapeHtml(regNo)}')">
+                                            ✗ Reject
+                                        </button>
+                                    ` : (st.includes('Rejected') ? `
+                                        <span style="color:#dc2626; font-size:0.8rem; font-weight:700;">✗ Rejected</span>
                                     ` : `
                                         <span style="color:#059669; font-size:0.8rem; font-weight:700;">✓ OTP Verified</span>
-                                    `}
+                                    `)}
                                 </div>
                             </td>
                         </tr>
@@ -414,6 +473,35 @@
                     return;
                 }
                 renderLeaveLetterModal(data);
+
+                const isPendingParent = data.leave?.status === 'Waiting for Parent' || data.leave?.current_stage === 'parent';
+                const stdName = data.student?.full_name || 'Ward';
+                const regNo = data.student?.register_number || '';
+
+                // Second Reject Option: Wire buttons in letterhead modal
+                const btnApprove = document.getElementById('btnLetterModalApprove');
+                const btnReject = document.getElementById('btnLetterModalReject');
+
+                if (btnApprove && btnReject) {
+                    if (isPendingParent) {
+                        btnApprove.style.display = 'inline-block';
+                        btnReject.style.display = 'inline-block';
+
+                        btnApprove.onclick = () => {
+                            closeModal('leaveLetterModal');
+                            openOtpModalDirect(leaveId, stdName, regNo);
+                        };
+
+                        btnReject.onclick = () => {
+                            closeModal('leaveLetterModal');
+                            openParentRejectModalDirect(leaveId, stdName, regNo);
+                        };
+                    } else {
+                        btnApprove.style.display = 'none';
+                        btnReject.style.display = 'none';
+                    }
+                }
+
                 openModal('leaveLetterModal');
 
                 const listenBtn = document.getElementById('btnListenLetterModal');
@@ -448,7 +536,8 @@
             activeLeaveId = leaveId;
             activeStudentName = `${studentName} (${regNo})`;
             
-            const savedPhone = localStorage.getItem('campusflow_parent_custom_phone');
+            const userKey = currentUser.id || currentUser.profile?.id || '1';
+            const savedPhone = localStorage.getItem('campusflow_parent_custom_phone_' + userKey);
             activeParentPhone = savedPhone || currentUser.profile?.phone_number || currentUser.phone || '9876543210';
 
             const maskedPhone = window.CampusOTP.maskPhoneNumber(activeParentPhone);
@@ -563,6 +652,51 @@
                 alert('Error: ' + res.message);
                 btnSubmit.disabled = false;
                 btnSubmit.innerHTML = 'Verify OTP & Confirm Approval →';
+            }
+        }
+
+        function openParentRejectModalDirect(leaveId, studentName, regNo) {
+            activeLeaveId = leaveId;
+            activeStudentName = `${studentName} (${regNo})`;
+
+            const studentEl = document.getElementById('rejectTargetStudent');
+            if (studentEl) studentEl.textContent = activeStudentName;
+
+            document.getElementById('rejectCustomReasonInput').value = '';
+            document.getElementById('rejectReasonSelect').selectedIndex = 0;
+
+            const btnConfirm = document.getElementById('btnConfirmParentReject');
+            if (btnConfirm) {
+                btnConfirm.disabled = false;
+                btnConfirm.innerHTML = '✗ Confirm Rejection (Final)';
+            }
+
+            openModal('parentRejectModal');
+        }
+
+        async function submitParentRejectionSupabase() {
+            const reasonType = document.getElementById('rejectReasonSelect').value;
+            const customComments = document.getElementById('rejectCustomReasonInput').value.trim();
+            const fullReason = customComments ? `${reasonType} - ${customComments}` : reasonType;
+
+            const btnConfirm = document.getElementById('btnConfirmParentReject');
+            btnConfirm.disabled = true;
+            btnConfirm.innerHTML = 'Recording Rejection...';
+
+            const res = await CampusDB.submitParentRejection(
+                activeLeaveId,
+                currentUser.profile?.id || 1,
+                fullReason
+            );
+
+            if (res.success) {
+                alert('❌ Leave application rejected by Parent. The record has been updated in Supabase.');
+                closeModal('parentRejectModal');
+                await loadParentLeaves();
+            } else {
+                alert('Error: ' + res.message);
+                btnConfirm.disabled = false;
+                btnConfirm.innerHTML = '✗ Confirm Rejection (Final)';
             }
         }
     </script>

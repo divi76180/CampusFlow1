@@ -308,6 +308,32 @@
         }
     }
 
+    async function submitParentRejection(leaveId, parentId, reason = '') {
+        const sb = initClient();
+        if (!sb) return { success: false, message: 'Supabase not connected.' };
+
+        try {
+            // 1. Log Rejection in approvals table
+            await sb.from('approvals').insert([{
+                leave_id: leaveId,
+                approver_role: 'parent',
+                action: 'rejected',
+                remarks: reason || 'Leave request declined by Parent / Guardian'
+            }]);
+
+            // 2. Update Leave Request Stage -> Rejected
+            await sb.from('leave_requests').update({
+                status: 'Rejected by Parent',
+                current_stage: 'rejected',
+                updated_at: new Date().toISOString()
+            }).eq('id', leaveId);
+
+            return { success: true, message: 'Leave application rejected by Parent.' };
+        } catch (err) {
+            return { success: false, message: err.message };
+        }
+    }
+
     // Alias for backward compatibility
     async function submitParentVoiceApproval(leaveId, parentId, transcript, score, remarks = '') {
         return submitParentOtpApproval(leaveId, parentId, 'OTP_VERIFIED', remarks);
@@ -508,6 +534,7 @@
         submitLeaveRequest,
         submitParentOtpApproval,
         submitParentVoiceApproval,
+        submitParentRejection,
         submitFacultyApproval
     };
 }));
