@@ -1,9 +1,9 @@
 -- ==============================================================================
 -- CampusFlow: Digital Leave Approval Portal
--- Supabase (PostgreSQL) Database Schema & Initial Seed Data
+-- Clean Supabase (PostgreSQL) Database Schema (EMPTY TABLES - ZERO SEED DATA)
 -- ==============================================================================
 
--- 1. Clean Up Existing Tables (if re-running)
+-- 1. Clean Up Existing Tables (Drop if exists)
 DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS voice_verifications CASCADE;
 DROP TABLE IF EXISTS voice_samples CASCADE;
@@ -98,7 +98,7 @@ CREATE TABLE approvals (
     action_timestamp TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 8. Create Voice Samples Table (Parent Biometric Registration)
+-- 8. Create Voice Samples Table (Parent Audio Registration)
 CREATE TABLE voice_samples (
     id BIGSERIAL PRIMARY KEY,
     parent_id BIGINT NOT NULL REFERENCES parents(id) ON DELETE CASCADE,
@@ -108,7 +108,7 @@ CREATE TABLE voice_samples (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 9. Create Voice Verifications Table (Live Approval Verification Audits)
+-- 9. Create Voice Verifications Table (Approval Verification Audits)
 CREATE TABLE voice_verifications (
     id BIGSERIAL PRIMARY KEY,
     leave_id BIGINT NOT NULL REFERENCES leave_requests(id) ON DELETE CASCADE,
@@ -132,66 +132,8 @@ CREATE TABLE notifications (
 );
 
 -- ==============================================================================
--- 11. Initial Seed Data (All passwords: 'password123')
--- Hash: $2y$10$aJtXH9KqktnGf1mq/3K.R.zxsBFlQB8lg7QmxwnVE3AEYTu6dPVi.
+-- 11. Disable Row Level Security (Allows direct API Signup, Login & Approvals)
 -- ==============================================================================
-
--- Seed Users
-INSERT INTO users (id, username, email, phone, password_hash, role) VALUES
-(1, '21CS101', 'rahul@campusflow.edu', '9876543201', '$2y$10$aJtXH9KqktnGf1mq/3K.R.zxsBFlQB8lg7QmxwnVE3AEYTu6dPVi.', 'student'),
-(2, '21CS102', 'priya@campusflow.edu', '9876543202', '$2y$10$aJtXH9KqktnGf1mq/3K.R.zxsBFlQB8lg7QmxwnVE3AEYTu6dPVi.', 'student'),
-(3, '9876543210', 'suresh@parent.com', '9876543210', '$2y$10$aJtXH9KqktnGf1mq/3K.R.zxsBFlQB8lg7QmxwnVE3AEYTu6dPVi.', 'parent'),
-(4, '9876543220', 'ramesh@parent.com', '9876543220', '$2y$10$aJtXH9KqktnGf1mq/3K.R.zxsBFlQB8lg7QmxwnVE3AEYTu6dPVi.', 'parent'),
-(5, 'FAC-CS-01', 'advisor.cs@campusflow.edu', '9876543230', '$2y$10$aJtXH9KqktnGf1mq/3K.R.zxsBFlQB8lg7QmxwnVE3AEYTu6dPVi.', 'advisor'),
-(6, 'HOD-CSE-01', 'hod.cse@campusflow.edu', '9876543240', '$2y$10$aJtXH9KqktnGf1mq/3K.R.zxsBFlQB8lg7QmxwnVE3AEYTu6dPVi.', 'hod'),
-(7, 'WARDEN-BH-01', 'warden.bh@campusflow.edu', '9876543250', '$2y$10$aJtXH9KqktnGf1mq/3K.R.zxsBFlQB8lg7QmxwnVE3AEYTu6dPVi.', 'warden'),
-(8, '25ITR180', 'yazhini@campusflow.edu', '9003497761', '$2y$10$aJtXH9KqktnGf1mq/3K.R.zxsBFlQB8lg7QmxwnVE3AEYTu6dPVi.', 'student'),
-(9, '9003497761', 'saranya@parent.com', '9003497761', '$2y$10$aJtXH9KqktnGf1mq/3K.R.zxsBFlQB8lg7QmxwnVE3AEYTu6dPVi.', 'parent');
-
--- Reset users sequence
-SELECT setval('users_id_seq', (SELECT MAX(id) FROM users));
-
--- Seed Parents
-INSERT INTO parents (id, user_id, full_name, phone_number, student_reg_no, preferred_language) VALUES
-(1, 3, 'Suresh Sharma', '9876543210', '21CS101', 'ta'),
-(2, 4, 'Ramesh Patel', '9876543220', '21CS102', 'hi'),
-(3, 9, 'Saranya', '9003497761', '25ITR180', 'ta');
-
-SELECT setval('parents_id_seq', (SELECT MAX(id) FROM parents));
-
--- Seed Students
-INSERT INTO students (id, user_id, register_number, full_name, department, year, section, hostel_status, room_number, parent_id) VALUES
-(1, 1, '21CS101', 'Rahul Sharma', 'Computer Science and Engineering', 3, 'A', 'hosteller', 'BH-304', 1),
-(2, 2, '21CS102', 'Priya Patel', 'Computer Science and Engineering', 3, 'A', 'day_scholar', NULL, 2),
-(3, 8, '25ITR180', 'Yazhini S', 'Information Technology', 2, 'C', 'day_scholar', NULL, 3);
-
-SELECT setval('students_id_seq', (SELECT MAX(id) FROM students));
-
--- Seed Faculty
-INSERT INTO faculty (id, user_id, faculty_id, full_name, department, designation, assigned_year, assigned_section, hostel_block) VALUES
-(1, 5, 'FAC-CS-01', 'Dr. A. Ramanathan', 'Computer Science and Engineering', 'Class Advisor - CSE 3A', 3, 'A', NULL),
-(2, 6, 'HOD-CSE-01', 'Dr. K. Meenakshi', 'Computer Science and Engineering', 'Head of Department', NULL, NULL, NULL),
-(3, 7, 'WARDEN-BH-01', 'Col. R. Balaji', 'Campus Administration', 'Chief Hostel Warden', NULL, NULL, 'Kaveri Boys Hostel');
-
-SELECT setval('faculty_id_seq', (SELECT MAX(id) FROM faculty));
-
--- Seed Leave Requests
-INSERT INTO leave_requests (id, student_id, leave_type, from_date, to_date, from_time, to_time, reason, destination_address, emergency_contact, status, current_stage) VALUES
-(1, 1, 'Casual / Home Visit', CURRENT_DATE + INTERVAL '1 day', CURRENT_DATE + INTERVAL '3 days', '08:00:00', '18:00:00', 'Visiting family for annual festival', '42, Temple Street, Madurai, Tamil Nadu - 625001', '9876543210', 'Waiting for Parent', 'parent'),
-(2, 1, 'Hostel Outpass', CURRENT_DATE + INTERVAL '5 days', CURRENT_DATE + INTERVAL '6 days', '09:00:00', '19:00:00', 'Attending regional hackathon finals', 'Coders Hub, Guindy, Chennai - 600025', '9876543210', 'Completed', 'completed'),
-(3, 2, 'Medical Leave', CURRENT_DATE + INTERVAL '2 days', CURRENT_DATE + INTERVAL '4 days', '08:30:00', '17:00:00', 'Medical checkup and recovery', '15, Anna Nagar, Chennai - 600040', '9876543220', 'Completed', 'completed'),
-(4, 3, 'Family Function Leave', CURRENT_DATE + INTERVAL '1 day', CURRENT_DATE + INTERVAL '3 days', '08:30:00', '18:00:00', 'Attending family temple festival in native town', '45, Main Road, Madurai', '9003497761', 'Waiting for Parent', 'parent');
-
-SELECT setval('leave_requests_id_seq', (SELECT MAX(id) FROM leave_requests));
-
--- Seed Approvals
-INSERT INTO approvals (leave_id, approver_role, approver_user_id, action, remarks) VALUES
-(2, 'parent', 3, 'approved', 'SMS OTP Authorization Verified (+91 9876543210)'),
-(2, 'advisor', 5, 'approved', 'Academic attendance verified (>85%)'),
-(2, 'hod', 6, 'approved', 'Department leave sanctioned. Forwarded to Warden.'),
-(2, 'warden', 7, 'approved', 'Hostel Gate Pass issued. Safe travels.');
-
--- Disable Row Level Security to allow direct API inserts & reads
 ALTER TABLE users DISABLE ROW LEVEL SECURITY;
 ALTER TABLE students DISABLE ROW LEVEL SECURITY;
 ALTER TABLE parents DISABLE ROW LEVEL SECURITY;
