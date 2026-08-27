@@ -1,6 +1,15 @@
 # 🎓 CampusFlow – Digital Leave Approval Portal
 
-> **Cloud-Native Digital Leave Management System** with Multilingual Parent Text-to-Speech (TTS), Voice Biometric Approval ($\ge 70\%$ acoustic match), Automated Approval Hierarchy, Smart Hostel Branching, and Scannable QR Code Outpass Verification.
+> **Cloud-Native Digital Leave Management System** with Multilingual Parent Text-to-Speech (TTS), SMS OTP Authorization, Automated Approval Hierarchy, Smart Hostel Branching, and Scannable QR Code Outpass Verification.
+
+---
+
+## 🌐 Official Live Production Deployment
+
+👉 **Live Portal URL:** [https://campus-flow1-ncbx.vercel.app/](https://campus-flow1-ncbx.vercel.app/)  
+👉 **Live Security Gate Scanner:** [https://campus-flow1-ncbx.vercel.app/security_gate.html](https://campus-flow1-ncbx.vercel.app/security_gate.html)  
+👉 **Live Sign In:** [https://campus-flow1-ncbx.vercel.app/login.html](https://campus-flow1-ncbx.vercel.app/login.html)  
+👉 **GitHub Repository:** [https://github.com/divi76180/CampusFlow1](https://github.com/divi76180/CampusFlow1)
 
 ---
 
@@ -12,17 +21,6 @@ CampusFlow connects directly to **Supabase PostgreSQL**:
 
 ---
 
-## 🚀 Instant Deployment (Vercel / Netlify / GitHub)
-
-### Deploy to Vercel (1-Click CLI):
-```bash
-npx vercel
-```
-* Follow the interactive prompts.
-* Production URL is generated automatically in ~30 seconds with global CDN and free HTTPS SSL.
-
----
-
 ## 🏛️ System Roles & Demo Credentials
 
 > **Universal Password for all demo accounts:** `password123`
@@ -30,11 +28,11 @@ npx vercel
 | Role | Account Name | Login ID | Password | Portal Features |
 |---|---|---|---|---|
 | 🎓 **Student (Hosteller)** | Rahul Sharma | `21CS101` | `password123` | Applies for leave; routes to Warden; generates **Digital QR Outpass** |
-| 🎓 **Student (Hosteller)** | Karthik Raja | `21CS105` | `password123` | Newly registered Hosteller account |
 | 🎓 **Student (Day Scholar)** | Priya Patel | `21CS102` | `password123` | Direct completion after HOD approval |
-| 👨‍👩‍👧 **Parent (Tamil TTS)** | Suresh Sharma | `9876543210` | `password123` | Tamil TTS letter playback; **Voice Biometric Approval ($\ge 70\%$)** |
-| 👨‍👩‍👧 **Parent (English TTS)** | Ramesh Patel | `9876543220` | `password123` | English TTS letter playback; Voice biometric approval |
-| 📋 **Class Advisor** | Dr. Ramanathan | `FAC-CS-01` | `password123` | Reviews attendance & parent voice verification; forwards to HOD |
+| 👨‍👩‍👧 **Parent (Tamil TTS)** | Saranya | `9003497761` | `password123` | Tamil TTS letter playback; **SMS OTP Approval** |
+| 👨‍👩‍👧 **Parent (Tamil TTS)** | Suresh Sharma | `9876543210` | `password123` | Tamil TTS letter playback; SMS OTP Approval |
+| 👨‍👩‍👧 **Parent (English TTS)** | Ramesh Patel | `9876543220` | `password123` | English TTS letter playback; SMS OTP Approval |
+| 📋 **Class Advisor** | Dr. Ramanathan | `FAC-CS-01` | `password123` | Reviews attendance & parent OTP verification; forwards to HOD |
 | 🏛️ **HOD** | Dr. Meenakshi | `HOD-CSE-01` | `password123` | Department sanction; smart hostel branching (Hosteller $\to$ Warden) |
 | 🏢 **Hostel Warden** | Col. Balaji | `WARDEN-BH-01` | `password123` | Issues gate clearance; generates **Scannable QR Gate Passes** |
 | 🛡️ **Gate Security** | Main Gate | *Public* | *None* | Scans QR code & verifies clearance status |
