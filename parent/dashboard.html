@@ -183,71 +183,93 @@
         });
 
         async function loadParentLeaves() {
-            const allLeaves = await CampusDB.getAllLeaves();
-            const childReg = currentUser.profile?.student_reg_no || '';
-            const parentId = currentUser.profile?.id;
+            try {
+                const allLeaves = await CampusDB.getAllLeaves();
+                const childReg = currentUser?.profile?.student_reg_no || '';
+                const parentId = currentUser?.profile?.id;
 
-            // Match leaves for this parent's ward, or show pending parent leaves
-            let leaves = allLeaves.filter(l => {
-                if (childReg && l.students?.register_number === childReg) return true;
-                if (parentId && (l.students?.parent_id === parentId || l.student_id === parentId)) return true;
-                return false;
-            });
+                // Match leaves for this parent's ward, or show pending parent leaves
+                let leaves = (allLeaves || []).filter(l => {
+                    if (childReg && l.students?.register_number === childReg) return true;
+                    if (parentId && (l.students?.parent_id === parentId || l.student_id === parentId)) return true;
+                    return false;
+                });
 
-            // If no exact match (e.g. general parent account), show all pending parent leaves for testing
-            if (leaves.length === 0) {
-                leaves = allLeaves;
-            }
+                // If no exact match (e.g. general parent account), show all leaves for testing
+                if (leaves.length === 0) {
+                    leaves = allLeaves || [];
+                }
 
-            const tbody = document.getElementById('parentTableBody');
-            if (leaves.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:3rem; color:#94a3b8;">No leave applications found for your ward.</td></tr>`;
-                return;
-            }
+                const tbody = document.getElementById('parentTableBody');
+                if (!tbody) return;
 
-            let html = '';
-            leaves.forEach(l => {
-                const isPendingParent = l.status === 'Waiting for Parent' || l.current_stage === 'parent';
-                const stdName = l.students?.full_name || 'Ward';
-                const regNo = l.students?.register_number || childReg;
+                if (leaves.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:3rem; color:#94a3b8;">No leave applications found for your ward.</td></tr>`;
+                    return;
+                }
 
-                html += `
-                    <tr>
-                        <td>
-                            <strong>${escapeHtml(stdName)}</strong><br>
-                            <span style="font-size:0.8rem; color:#64748b;">${escapeHtml(regNo)}</span>
-                        </td>
-                        <td><span style="font-weight:600; color:#1e40af;">${escapeHtml(l.leave_type)}</span></td>
-                        <td>${new Date(l.from_date).toLocaleDateString('en-GB', {day:'numeric', month:'short'})} - ${new Date(l.to_date).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'})}</td>
-                        <td style="max-width:180px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${escapeHtml(l.reason)}</td>
-                        <td>${escapeHtml(l.destination_address)}</td>
-                        <td>
-                            <span class="status-badge ${getStatusClass(l.status)}">
-                                ${escapeHtml(l.status)}
-                            </span>
-                        </td>
-                        <td style="text-align:center;">
-                            <div style="display:inline-flex; gap:0.4rem; flex-wrap:wrap; justify-content:center;">
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="viewLeaveLetterDirect(${l.id})">
-                                    📄 View
-                                </button>
-                                <button type="button" class="btn btn-voice btn-sm" onclick="listenToLetterDirect(${l.id})">
-                                    🔊 Listen
-                                </button>
-                                ${isPendingParent ? `
-                                    <button type="button" class="btn btn-primary btn-sm" onclick="openVoiceModalDirect(${l.id}, '${stdName}', '${regNo}')">
-                                        🎙️ Voice Approve
+                let html = '';
+                leaves.forEach(l => {
+                    const st = l.status || 'Pending';
+                    const isPendingParent = st === 'Waiting for Parent' || l.current_stage === 'parent';
+                    const stdName = l.students?.full_name || 'Ward';
+                    const regNo = l.students?.register_number || childReg;
+                    const fromDateStr = l.from_date ? new Date(l.from_date).toLocaleDateString('en-GB', {day:'numeric', month:'short'}) : 'N/A';
+                    const toDateStr = l.to_date ? new Date(l.to_date).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'}) : 'N/A';
+
+                    html += `
+                        <tr>
+                            <td>
+                                <strong>${escapeHtml(stdName)}</strong><br>
+                                <span style="font-size:0.8rem; color:#64748b;">${escapeHtml(regNo)}</span>
+                            </td>
+                            <td><span style="font-weight:600; color:#1e40af;">${escapeHtml(l.leave_type || 'Leave')}</span></td>
+                            <td>${fromDateStr} - ${toDateStr}</td>
+                            <td style="max-width:180px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${escapeHtml(l.reason || '')}</td>
+                            <td>${escapeHtml(l.destination_address || 'N/A')}</td>
+                            <td>
+                                <span class="status-badge ${getStatusClass(st)}">
+                                    ${escapeHtml(st)}
+                                </span>
+                            </td>
+                            <td style="text-align:center;">
+                                <div style="display:inline-flex; gap:0.4rem; flex-wrap:wrap; justify-content:center;">
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="viewLeaveLetterDirect(${l.id})">
+                                        📄 View
                                     </button>
-                                ` : `
-                                    <span style="color:#059669; font-size:0.8rem; font-weight:700;">✓ Verified</span>
-                                `}
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            });
+                                    <button type="button" class="btn btn-voice btn-sm" onclick="listenToLetterDirect(${l.id})">
+                                        🔊 Listen
+                                    </button>
+                                    ${isPendingParent ? `
+                                        <button type="button" class="btn btn-primary btn-sm" onclick="openVoiceModalDirect(${l.id}, '${escapeHtml(stdName)}', '${escapeHtml(regNo)}')">
+                                            🎙️ Voice Approve
+                                        </button>
+                                    ` : `
+                                        <span style="color:#059669; font-size:0.8rem; font-weight:700;">✓ Verified</span>
+                                    `}
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
 
-            tbody.innerHTML = html;
+                tbody.innerHTML = html;
+            } catch (err) {
+                console.error('loadParentLeaves error:', err);
+                const tbody = document.getElementById('parentTableBody');
+                if (tbody) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" style="text-align:center; padding:2.5rem; color:#dc2626;">
+                                ⚠️ Error loading records: ${escapeHtml(err.message || 'Could not connect to database')}.
+                                <div style="margin-top: 0.75rem;">
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="loadParentLeaves()">🔄 Retry</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }
+            }
         }
 
         async function viewLeaveLetterDirect(leaveId) {

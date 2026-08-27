@@ -271,91 +271,126 @@
         });
 
         async function loadLeaves() {
-            const studentId = currentUser.profile?.id || currentUser.id || 1;
-            let leaves = await CampusDB.getStudentLeaves(studentId);
+            try {
+                const studentId = currentUser?.profile?.id || currentUser?.id || 1;
+                let leaves = await CampusDB.getStudentLeaves(studentId);
 
-            // If empty, also check with all leaves as fallback
-            if ((!leaves || leaves.length === 0) && currentUser.profile?.register_number) {
-                const allLeaves = await CampusDB.getAllLeaves();
-                leaves = allLeaves.filter(l => l.students?.register_number === currentUser.profile.register_number || l.student_id === studentId);
-            }
-
-            leaves = leaves || [];
-
-            const statTotal = document.getElementById('statTotalLeaves');
-            if (statTotal) statTotal.textContent = leaves.length;
-            
-            const pending = leaves.filter(l => !l.status.toLowerCase().includes('completed') && !l.status.toLowerCase().includes('rejected')).length;
-            const approved = leaves.filter(l => l.status.toLowerCase().includes('completed')).length;
-            
-            const statPending = document.getElementById('statPendingLeaves');
-            if (statPending) statPending.textContent = pending;
-            
-            const statApproved = document.getElementById('statApprovedLeaves');
-            if (statApproved) statApproved.textContent = approved;
-
-            const tbody = document.getElementById('leavesTableBody');
-            if (leaves.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="7" style="text-align:center; padding:3.5rem 1.5rem;">
-                            <div style="font-size: 2.8rem; margin-bottom: 0.5rem;">📝</div>
-                            <h3 style="font-size: 1.25rem; color: #1e293b; margin-bottom: 0.4rem;">No Leave Applications Yet</h3>
-                            <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1.25rem;">Submit your first leave request to initiate the automated approval flow.</p>
-                            <button type="button" class="btn btn-primary btn-lg" onclick="openModal('applyLeaveModal')" style="box-shadow: 0 4px 12px rgba(37,99,235,0.3); font-weight:700;">
-                                ➕ Apply for Leave Now
-                            </button>
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-
-            let html = '';
-            let activeOutpassId = null;
-
-            leaves.forEach(l => {
-                const isCompleted = l.status.toLowerCase().includes('completed');
-                const isHosteller = currentUser.profile?.hostel_status === 'hosteller';
-
-                if (isCompleted && isHosteller && !activeOutpassId) {
-                    activeOutpassId = l.id;
+                // If empty, also check with all leaves as fallback
+                if ((!leaves || leaves.length === 0) && currentUser?.profile?.register_number) {
+                    const allLeaves = await CampusDB.getAllLeaves();
+                    leaves = allLeaves.filter(l => l.students?.register_number === currentUser.profile.register_number || l.student_id === studentId);
                 }
 
-                html += `
-                    <tr>
-                        <td><strong>#LR-${l.id}</strong></td>
-                        <td><span style="font-weight:600; color:#1e40af;">${escapeHtml(l.leave_type)}</span></td>
-                        <td>${new Date(l.from_date).toLocaleDateString('en-GB', {day:'numeric', month:'short'})} - ${new Date(l.to_date).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'})}</td>
-                        <td style="max-width:200px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${escapeHtml(l.reason)}</td>
-                        <td>${escapeHtml(l.destination_address)}</td>
-                        <td>
-                            <span class="status-badge ${getStatusClass(l.status)}">
-                                ${escapeHtml(l.status)}
-                            </span>
-                        </td>
-                        <td style="text-align:center;">
-                            <div style="display:inline-flex; gap:0.4rem; flex-wrap:wrap; justify-content:center;">
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="viewLeaveLetterDirect(${l.id})">
-                                    📄 View Letter
+                leaves = leaves || [];
+
+                const statTotal = document.getElementById('statTotalLeaves');
+                if (statTotal) statTotal.textContent = leaves.length;
+                
+                const pending = leaves.filter(l => {
+                    const st = (l.status || '').toLowerCase();
+                    return !st.includes('completed') && !st.includes('rejected');
+                }).length;
+                
+                const approved = leaves.filter(l => {
+                    const st = (l.status || '').toLowerCase();
+                    return st.includes('completed');
+                }).length;
+                
+                const statPending = document.getElementById('statPendingLeaves');
+                if (statPending) statPending.textContent = pending;
+                
+                const statApproved = document.getElementById('statApprovedLeaves');
+                if (statApproved) statApproved.textContent = approved;
+
+                const tbody = document.getElementById('leavesTableBody');
+                if (!tbody) return;
+
+                if (leaves.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" style="text-align:center; padding:3.5rem 1.5rem;">
+                                <div style="font-size: 2.8rem; margin-bottom: 0.5rem;">📝</div>
+                                <h3 style="font-size: 1.25rem; color: #1e293b; margin-bottom: 0.4rem;">No Leave Applications Yet</h3>
+                                <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1.25rem;">Submit your first leave request to initiate the automated approval flow.</p>
+                                <button type="button" class="btn btn-primary btn-lg" onclick="openModal('applyLeaveModal')" style="box-shadow: 0 4px 12px rgba(37,99,235,0.3); font-weight:700;">
+                                    ➕ Apply for Leave Now
                                 </button>
-                                ${isCompleted && isHosteller ? `
-                                    <button type="button" class="btn btn-success btn-sm" onclick="viewHostelOutpassDirect(${l.id})">
-                                        🎫 QR Outpass
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                let activeOutpassId = null;
+
+                leaves.forEach(l => {
+                    const st = l.status || 'Pending';
+                    const isCompleted = st.toLowerCase().includes('completed');
+                    const isHosteller = (currentUser?.profile?.hostel_status || 'day_scholar') === 'hosteller';
+
+                    if (isCompleted && isHosteller && !activeOutpassId) {
+                        activeOutpassId = l.id;
+                    }
+
+                    const fromDateStr = l.from_date ? new Date(l.from_date).toLocaleDateString('en-GB', {day:'numeric', month:'short'}) : 'N/A';
+                    const toDateStr = l.to_date ? new Date(l.to_date).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'}) : 'N/A';
+
+                    html += `
+                        <tr>
+                            <td><strong>#LR-${l.id}</strong></td>
+                            <td><span style="font-weight:600; color:#1e40af;">${escapeHtml(l.leave_type || 'Leave')}</span></td>
+                            <td>${fromDateStr} - ${toDateStr}</td>
+                            <td style="max-width:200px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${escapeHtml(l.reason || '')}</td>
+                            <td>${escapeHtml(l.destination_address || '')}</td>
+                            <td>
+                                <span class="status-badge ${getStatusClass(st)}">
+                                    ${escapeHtml(st)}
+                                </span>
+                            </td>
+                            <td style="text-align:center;">
+                                <div style="display:inline-flex; gap:0.4rem; flex-wrap:wrap; justify-content:center;">
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="viewLeaveLetterDirect(${l.id})">
+                                        📄 View Letter
                                     </button>
-                                ` : ''}
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            });
+                                    ${isCompleted && isHosteller ? `
+                                        <button type="button" class="btn btn-success btn-sm" onclick="viewHostelOutpassDirect(${l.id})">
+                                            🎫 QR Outpass
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
 
-            tbody.innerHTML = html;
+                tbody.innerHTML = html;
 
-            if (activeOutpassId) {
-                const banner = document.getElementById('activeOutpassBanner');
-                banner.style.display = 'flex';
-                document.getElementById('btnActiveOutpassModal').onclick = () => viewHostelOutpassDirect(activeOutpassId);
+                if (activeOutpassId) {
+                    const banner = document.getElementById('activeOutpassBanner');
+                    if (banner) {
+                        banner.style.display = 'flex';
+                        const btnOutpass = document.getElementById('btnActiveOutpassModal');
+                        if (btnOutpass) {
+                            btnOutpass.onclick = () => viewHostelOutpassDirect(activeOutpassId);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('loadLeaves error:', err);
+                const tbody = document.getElementById('leavesTableBody');
+                if (tbody) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" style="text-align:center; padding:2.5rem; color:#dc2626;">
+                                ⚠️ Error loading leave applications: ${escapeHtml(err.message || 'Could not connect to database')}.
+                                <div style="margin-top: 0.75rem;">
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="loadLeaves()">🔄 Retry</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }
             }
         }
 

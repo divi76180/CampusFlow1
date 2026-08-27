@@ -145,77 +145,98 @@
         });
 
         async function loadWardenLeaves() {
-            const allLeaves = await CampusDB.getAllLeaves();
-            // Filter hostellers only
-            const leaves = allLeaves.filter(l => l.students?.hostel_status === 'hosteller');
+            try {
+                const allLeaves = await CampusDB.getAllLeaves();
+                // Filter hostellers only
+                const leaves = (allLeaves || []).filter(l => l.students?.hostel_status === 'hosteller');
 
-            const tbody = document.getElementById('wardenTableBody');
-            if (leaves.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:3rem; color:#94a3b8;">No hosteller leave applications found in Supabase.</td></tr>`;
-                return;
+                const tbody = document.getElementById('wardenTableBody');
+                if (!tbody) return;
+
+                if (leaves.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:3rem; color:#94a3b8;">No hosteller leave applications found in Supabase.</td></tr>`;
+                    return;
+                }
+
+                let html = '';
+                leaves.forEach(l => {
+                    const st = l.status || 'Pending';
+                    const isReady = (st.includes('Waiting for Warden') || l.current_stage === 'warden');
+                    const isCompleted = st.toLowerCase().includes('completed');
+
+                    const stdName = l.students?.full_name || 'Hosteller';
+                    const regNo = l.students?.register_number || 'N/A';
+                    const dept = l.students?.department || 'CSE';
+                    const room = l.students?.room_number || 'BH-304';
+                    const fromDateStr = l.from_date ? new Date(l.from_date).toLocaleDateString('en-GB', {day:'numeric', month:'short'}) : 'N/A';
+                    const toDateStr = l.to_date ? new Date(l.to_date).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'}) : 'N/A';
+
+                    html += `
+                        <tr>
+                            <td>
+                                <strong>${escapeHtml(stdName)}</strong><br>
+                                <span style="font-size:0.8rem; color:#64748b;">${escapeHtml(regNo)}</span>
+                            </td>
+                            <td>
+                                ${escapeHtml(dept)}<br>
+                                <span style="font-size:0.8rem; color:#d97706; font-weight:700;">🏠 ${escapeHtml(room)}</span>
+                            </td>
+                            <td>
+                                <span style="font-weight:600; color:#1e40af;">${escapeHtml(l.leave_type || 'Leave')}</span><br>
+                                <span style="font-size:0.8rem; color:#64748b;">${fromDateStr} - ${toDateStr}</span>
+                            </td>
+                            <td style="max-width:180px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
+                                ${escapeHtml(l.destination_address || 'N/A')}
+                            </td>
+                            <td>
+                                <span class="status-badge status-green" style="font-size:0.75rem;">✓ Parent + Advisor + HOD</span>
+                            </td>
+                            <td>
+                                <span class="status-badge ${getStatusClass(st)}">
+                                    ${escapeHtml(st)}
+                                </span>
+                            </td>
+                            <td style="text-align:center;">
+                                <div style="display:inline-flex; gap:0.35rem; flex-wrap:wrap; justify-content:center;">
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="viewLeaveLetterDirect(${l.id})">
+                                        📄 View
+                                    </button>
+                                    ${isReady ? `
+                                        <button type="button" class="btn btn-success btn-sm" onclick="handleWardenAction(${l.id}, 'approved')">
+                                            ✓ Issue Outpass (Complete)
+                                        </button>
+                                        <button type="button" class="btn btn-danger btn-sm" onclick="handleWardenAction(${l.id}, 'rejected')">
+                                            ✗ Reject
+                                        </button>
+                                    ` : ''}
+                                    ${isCompleted ? `
+                                        <button type="button" class="btn btn-success btn-sm" onclick="viewHostelOutpassDirect(${l.id})">
+                                            🎫 QR Outpass
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                tbody.innerHTML = html;
+            } catch (err) {
+                console.error('loadWardenLeaves error:', err);
+                const tbody = document.getElementById('wardenTableBody');
+                if (tbody) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" style="text-align:center; padding:2.5rem; color:#dc2626;">
+                                ⚠️ Error loading records: ${escapeHtml(err.message || 'Could not connect to database')}.
+                                <div style="margin-top: 0.75rem;">
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="loadWardenLeaves()">🔄 Retry</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }
             }
-
-            let html = '';
-            leaves.forEach(l => {
-                const st = l.status;
-                const isReady = (st.includes('Waiting for Warden') || l.current_stage === 'warden');
-                const isCompleted = st.toLowerCase().includes('completed');
-
-                const stdName = l.students?.full_name || 'Hosteller';
-                const regNo = l.students?.register_number || 'N/A';
-                const dept = l.students?.department || 'CSE';
-                const room = l.students?.room_number || 'BH-304';
-
-                html += `
-                    <tr>
-                        <td>
-                            <strong>${escapeHtml(stdName)}</strong><br>
-                            <span style="font-size:0.8rem; color:#64748b;">${escapeHtml(regNo)}</span>
-                        </td>
-                        <td>
-                            ${escapeHtml(dept)}<br>
-                            <span style="font-size:0.8rem; color:#d97706; font-weight:700;">🏠 ${escapeHtml(room)}</span>
-                        </td>
-                        <td>
-                            <span style="font-weight:600; color:#1e40af;">${escapeHtml(l.leave_type)}</span><br>
-                            <span style="font-size:0.8rem; color:#64748b;">${new Date(l.from_date).toLocaleDateString('en-GB', {day:'numeric', month:'short'})} - ${new Date(l.to_date).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'})}</span>
-                        </td>
-                        <td style="max-width:180px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
-                            ${escapeHtml(l.destination_address)}
-                        </td>
-                        <td>
-                            <span class="status-badge status-green" style="font-size:0.75rem;">✓ Parent + Advisor + HOD</span>
-                        </td>
-                        <td>
-                            <span class="status-badge ${getStatusClass(st)}">
-                                ${escapeHtml(st)}
-                            </span>
-                        </td>
-                        <td style="text-align:center;">
-                            <div style="display:inline-flex; gap:0.35rem; flex-wrap:wrap; justify-content:center;">
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="viewLeaveLetterDirect(${l.id})">
-                                    📄 View
-                                </button>
-                                ${isReady ? `
-                                    <button type="button" class="btn btn-success btn-sm" onclick="handleWardenAction(${l.id}, 'approved')">
-                                        ✓ Issue Outpass (Complete)
-                                    </button>
-                                    <button type="button" class="btn btn-danger btn-sm" onclick="handleWardenAction(${l.id}, 'rejected')">
-                                        ✗ Reject
-                                    </button>
-                                ` : ''}
-                                ${isCompleted ? `
-                                    <button type="button" class="btn btn-success btn-sm" onclick="viewHostelOutpassDirect(${l.id})">
-                                        🎫 QR Outpass
-                                    </button>
-                                ` : ''}
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            tbody.innerHTML = html;
         }
 
         async function handleWardenAction(leaveId, action) {

@@ -129,77 +129,97 @@
         });
 
         async function loadAdvisorLeaves() {
-            const leaves = await CampusDB.getAllLeaves();
-            const tbody = document.getElementById('advisorTableBody');
+            try {
+                const leaves = await CampusDB.getAllLeaves();
+                const tbody = document.getElementById('advisorTableBody');
+                if (!tbody) return;
 
-            if (leaves.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:3rem; color:#94a3b8;">No student leave applications found in Supabase.</td></tr>`;
-                return;
-            }
-
-            let html = '';
-            leaves.forEach(l => {
-                const st = l.status;
-                const isReady = (st.includes('Parent Approved') || l.current_stage === 'advisor');
-                const isParentApproved = st.includes('Parent Approved') || st.includes('Advisor Approved') || st.includes('Waiting for Warden') || st.includes('Completed');
-
-                let rowClass = 'row-parent-pending';
-                let parentBadge = '<span class="status-badge status-yellow">⏳ Pending</span>';
-
-                if (isParentApproved) {
-                    rowClass = 'row-parent-approved';
-                    parentBadge = '<span class="status-badge status-green">✓ Approved (Voice)</span>';
-                } else if (st.includes('Rejected')) {
-                    rowClass = 'row-parent-rejected';
-                    parentBadge = '<span class="status-badge status-red">✗ Rejected</span>';
+                if (!leaves || leaves.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:3rem; color:#94a3b8;">No student leave applications found in Supabase.</td></tr>`;
+                    return;
                 }
 
-                const stdName = l.students?.full_name || 'Student';
-                const regNo = l.students?.register_number || 'N/A';
-                const dept = l.students?.department || 'CSE';
-                const yr = l.students?.year || 3;
-                const sec = l.students?.section || 'A';
+                let html = '';
+                leaves.forEach(l => {
+                    const st = l.status || 'Pending';
+                    const isReady = (st.includes('Parent Approved') || l.current_stage === 'advisor');
+                    const isParentApproved = st.includes('Parent Approved') || st.includes('Advisor Approved') || st.includes('Waiting for Warden') || st.includes('Completed');
 
-                html += `
-                    <tr class="${rowClass}">
-                        <td>
-                            <strong>${escapeHtml(stdName)}</strong><br>
-                            <span style="font-size:0.8rem; color:#64748b;">${escapeHtml(regNo)} (${dept} ${yr}-${sec})</span>
-                        </td>
-                        <td>
-                            <span style="font-weight:600; color:#1e40af;">${escapeHtml(l.leave_type)}</span><br>
-                            <span style="font-size:0.8rem; color:#64748b;">${new Date(l.from_date).toLocaleDateString('en-GB', {day:'numeric', month:'short'})} - ${new Date(l.to_date).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'})}</span>
-                        </td>
-                        <td style="max-width:200px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
-                            <strong>${escapeHtml(l.reason)}</strong><br>
-                            <span style="font-size:0.8rem; color:#64748b;">To: ${escapeHtml(l.destination_address)}</span>
-                        </td>
-                        <td>${parentBadge}</td>
-                        <td>
-                            <span class="status-badge ${getStatusClass(st)}">
-                                ${escapeHtml(st)}
-                            </span>
-                        </td>
-                        <td style="text-align:center;">
-                            <div style="display:inline-flex; gap:0.35rem; flex-wrap:wrap; justify-content:center;">
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="viewLeaveLetterDirect(${l.id})">
-                                    📄 View
-                                </button>
-                                ${isReady ? `
-                                    <button type="button" class="btn btn-success btn-sm" onclick="handleAdvisorAction(${l.id}, 'approved')">
-                                        ✓ Forward to HOD
-                                    </button>
-                                    <button type="button" class="btn btn-danger btn-sm" onclick="handleAdvisorAction(${l.id}, 'rejected')">
-                                        ✗ Reject
-                                    </button>
-                                ` : ''}
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            });
+                    let rowClass = 'row-parent-pending';
+                    let parentBadge = '<span class="status-badge status-yellow">⏳ Pending</span>';
 
-            tbody.innerHTML = html;
+                    if (isParentApproved) {
+                        rowClass = 'row-parent-approved';
+                        parentBadge = '<span class="status-badge status-green">✓ Approved (Voice)</span>';
+                    } else if (st.includes('Rejected')) {
+                        rowClass = 'row-parent-rejected';
+                        parentBadge = '<span class="status-badge status-red">✗ Rejected</span>';
+                    }
+
+                    const stdName = l.students?.full_name || 'Student';
+                    const regNo = l.students?.register_number || 'N/A';
+                    const dept = l.students?.department || 'CSE';
+                    const yr = l.students?.year || 3;
+                    const sec = l.students?.section || 'A';
+                    const fromDateStr = l.from_date ? new Date(l.from_date).toLocaleDateString('en-GB', {day:'numeric', month:'short'}) : 'N/A';
+                    const toDateStr = l.to_date ? new Date(l.to_date).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'}) : 'N/A';
+
+                    html += `
+                        <tr class="${rowClass}">
+                            <td>
+                                <strong>${escapeHtml(stdName)}</strong><br>
+                                <span style="font-size:0.8rem; color:#64748b;">${escapeHtml(regNo)} (${dept} ${yr}-${sec})</span>
+                            </td>
+                            <td>
+                                <span style="font-weight:600; color:#1e40af;">${escapeHtml(l.leave_type || 'Leave')}</span><br>
+                                <span style="font-size:0.8rem; color:#64748b;">${fromDateStr} - ${toDateStr}</span>
+                            </td>
+                            <td style="max-width:200px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
+                                <strong>${escapeHtml(l.reason || '')}</strong><br>
+                                <span style="font-size:0.8rem; color:#64748b;">To: ${escapeHtml(l.destination_address || 'N/A')}</span>
+                            </td>
+                            <td>${parentBadge}</td>
+                            <td>
+                                <span class="status-badge ${getStatusClass(st)}">
+                                    ${escapeHtml(st)}
+                                </span>
+                            </td>
+                            <td style="text-align:center;">
+                                <div style="display:inline-flex; gap:0.35rem; flex-wrap:wrap; justify-content:center;">
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="viewLeaveLetterDirect(${l.id})">
+                                        📄 View
+                                    </button>
+                                    ${isReady ? `
+                                        <button type="button" class="btn btn-success btn-sm" onclick="handleAdvisorAction(${l.id}, 'approved')">
+                                            ✓ Forward to HOD
+                                        </button>
+                                        <button type="button" class="btn btn-danger btn-sm" onclick="handleAdvisorAction(${l.id}, 'rejected')">
+                                            ✗ Reject
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                tbody.innerHTML = html;
+            } catch (err) {
+                console.error('loadAdvisorLeaves error:', err);
+                const tbody = document.getElementById('advisorTableBody');
+                if (tbody) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6" style="text-align:center; padding:2.5rem; color:#dc2626;">
+                                ⚠️ Error loading records: ${escapeHtml(err.message || 'Could not connect to database')}.
+                                <div style="margin-top: 0.75rem;">
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="loadAdvisorLeaves()">🔄 Retry</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }
+            }
         }
 
         async function handleAdvisorAction(leaveId, action) {

@@ -129,72 +129,92 @@
         });
 
         async function loadHodLeaves() {
-            const leaves = await CampusDB.getAllLeaves();
-            const tbody = document.getElementById('hodTableBody');
+            try {
+                const leaves = await CampusDB.getAllLeaves();
+                const tbody = document.getElementById('hodTableBody');
+                if (!tbody) return;
 
-            if (leaves.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:3rem; color:#94a3b8;">No leave requests found in Supabase.</td></tr>`;
-                return;
+                if (!leaves || leaves.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:3rem; color:#94a3b8;">No leave requests found in Supabase.</td></tr>`;
+                    return;
+                }
+
+                let html = '';
+                leaves.forEach(l => {
+                    const st = l.status || 'Pending';
+                    const isReadyForHod = (st.includes('Advisor Approved') || l.current_stage === 'hod');
+                    const hostelStatus = l.students?.hostel_status || 'day_scholar';
+                    const isHosteller = (hostelStatus === 'hosteller');
+
+                    const stdName = l.students?.full_name || 'Student';
+                    const regNo = l.students?.register_number || 'N/A';
+                    const dept = l.students?.department || 'CSE';
+                    const fromDateStr = l.from_date ? new Date(l.from_date).toLocaleDateString('en-GB', {day:'numeric', month:'short'}) : 'N/A';
+                    const toDateStr = l.to_date ? new Date(l.to_date).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'}) : 'N/A';
+
+                    html += `
+                        <tr>
+                            <td>
+                                <strong>${escapeHtml(stdName)}</strong><br>
+                                <span style="font-size:0.8rem; color:#64748b;">${escapeHtml(regNo)} (${dept})</span>
+                            </td>
+                            <td>
+                                <span class="meta-pill" style="font-weight:700; color:${isHosteller ? '#d97706' : '#2563eb'};">
+                                    ${isHosteller ? '🏢 Hosteller' : '🏠 Day Scholar'}
+                                </span>
+                            </td>
+                            <td>
+                                <span style="font-weight:600; color:#1e40af;">${escapeHtml(l.leave_type || 'Leave')}</span><br>
+                                <span style="font-size:0.8rem; color:#64748b;">${fromDateStr} - ${toDateStr}</span>
+                            </td>
+                            <td style="max-width:180px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
+                                <strong>${escapeHtml(l.reason || '')}</strong><br>
+                                <span style="font-size:0.8rem; color:#64748b;">To: ${escapeHtml(l.destination_address || 'N/A')}</span>
+                            </td>
+                            <td>
+                                <span class="status-badge status-green" style="font-size:0.75rem;">✓ Parent + Advisor</span>
+                            </td>
+                            <td>
+                                <span class="status-badge ${getStatusClass(st)}">
+                                    ${escapeHtml(st)}
+                                </span>
+                            </td>
+                            <td style="text-align:center;">
+                                <div style="display:inline-flex; gap:0.35rem; flex-wrap:wrap; justify-content:center;">
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="viewLeaveLetterDirect(${l.id})">
+                                        📄 View
+                                    </button>
+                                    ${isReadyForHod ? `
+                                        <button type="button" class="btn btn-success btn-sm" onclick="handleHodAction(${l.id}, 'approved', ${isHosteller})">
+                                            ${isHosteller ? '✓ Approve & Route to Warden' : '✓ Sanction Leave (Complete)'}
+                                        </button>
+                                        <button type="button" class="btn btn-danger btn-sm" onclick="handleHodAction(${l.id}, 'rejected', ${isHosteller})">
+                                            ✗ Reject
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                tbody.innerHTML = html;
+            } catch (err) {
+                console.error('loadHodLeaves error:', err);
+                const tbody = document.getElementById('hodTableBody');
+                if (tbody) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" style="text-align:center; padding:2.5rem; color:#dc2626;">
+                                ⚠️ Error loading requests: ${escapeHtml(err.message || 'Could not connect to database')}.
+                                <div style="margin-top: 0.75rem;">
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="loadHodLeaves()">🔄 Retry</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }
             }
-
-            let html = '';
-            leaves.forEach(l => {
-                const st = l.status;
-                const isReadyForHod = (st.includes('Advisor Approved') || l.current_stage === 'hod');
-                const hostelStatus = l.students?.hostel_status || 'day_scholar';
-                const isHosteller = (hostelStatus === 'hosteller');
-
-                const stdName = l.students?.full_name || 'Student';
-                const regNo = l.students?.register_number || 'N/A';
-                const dept = l.students?.department || 'CSE';
-
-                html += `
-                    <tr>
-                        <td>
-                            <strong>${escapeHtml(stdName)}</strong><br>
-                            <span style="font-size:0.8rem; color:#64748b;">${escapeHtml(regNo)} (${dept})</span>
-                        </td>
-                        <td>
-                            <span class="meta-pill" style="font-weight:700; color:${isHosteller ? '#d97706' : '#2563eb'};">
-                                ${isHosteller ? '🏢 Hosteller' : '🏠 Day Scholar'}
-                            </span>
-                        </td>
-                        <td>
-                            <span style="font-weight:600; color:#1e40af;">${escapeHtml(l.leave_type)}</span><br>
-                            <span style="font-size:0.8rem; color:#64748b;">${new Date(l.from_date).toLocaleDateString('en-GB', {day:'numeric', month:'short'})} - ${new Date(l.to_date).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'})}</span>
-                        </td>
-                        <td style="max-width:180px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
-                            <strong>${escapeHtml(l.reason)}</strong><br>
-                            <span style="font-size:0.8rem; color:#64748b;">To: ${escapeHtml(l.destination_address)}</span>
-                        </td>
-                        <td>
-                            <span class="status-badge status-green" style="font-size:0.75rem;">✓ Parent + Advisor</span>
-                        </td>
-                        <td>
-                            <span class="status-badge ${getStatusClass(st)}">
-                                ${escapeHtml(st)}
-                            </span>
-                        </td>
-                        <td style="text-align:center;">
-                            <div style="display:inline-flex; gap:0.35rem; flex-wrap:wrap; justify-content:center;">
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="viewLeaveLetterDirect(${l.id})">
-                                    📄 View
-                                </button>
-                                ${isReadyForHod ? `
-                                    <button type="button" class="btn btn-success btn-sm" onclick="handleHodAction(${l.id}, 'approved', ${isHosteller})">
-                                        ${isHosteller ? '✓ Approve & Route to Warden' : '✓ Sanction Leave (Complete)'}
-                                    </button>
-                                    <button type="button" class="btn btn-danger btn-sm" onclick="handleHodAction(${l.id}, 'rejected', ${isHosteller})">
-                                        ✗ Reject
-                                    </button>
-                                ` : ''}
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            tbody.innerHTML = html;
         }
 
         async function handleHodAction(leaveId, action, isHosteller) {
