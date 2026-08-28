@@ -235,16 +235,18 @@ function renderHostelOutpassModal(data) {
 
     const securityUrl = `${window.location.origin}/security_gate.html?pass_id=${leave.id}&reg=${encodeURIComponent(regNo)}&status=VALID`;
 
+    const isSickInHostel = (leave.leave_type || '').includes('Staying in Hostel') || (leave.destination_address || '').includes('In-Hostel') || (leave.leave_type || '').includes('Sick Rest');
+
     container.innerHTML = `
         <div class="outpass-container" id="printableOutpassCard">
-            <div class="outpass-topbar">
+            <div class="outpass-topbar" style="${isSickInHostel ? 'background: linear-gradient(135deg, #065f46 0%, #047857 100%);' : ''}">
                 <div>
-                    <div class="outpass-topbar-brand">CampusFlow Digital Gate Pass</div>
-                    <div style="font-size:0.75rem; color:#cbd5e1; letter-spacing:0.03em;">HOSTEL OUTPASS &amp; SECURITY CLEARANCE</div>
+                    <div class="outpass-topbar-brand">${isSickInHostel ? '🏥 CampusFlow In-Hostel Medical Pass' : 'CampusFlow Digital Gate Pass'}</div>
+                    <div style="font-size:0.75rem; color:#cbd5e1; letter-spacing:0.03em;">${isSickInHostel ? 'IN-HOSTEL ROOM REST &amp; ATTENDANCE EXEMPTION' : 'HOSTEL OUTPASS &amp; SECURITY CLEARANCE'}</div>
                 </div>
-                <div class="outpass-security-badge">
-                    <span>🛡️</span>
-                    <span>OFFICIALLY VERIFIED</span>
+                <div class="outpass-security-badge" style="${isSickInHostel ? 'background: rgba(255,255,255,0.2); color:#fff;' : ''}">
+                    <span>${isSickInHostel ? '🏥' : '🛡️'}</span>
+                    <span>${isSickInHostel ? 'ROOM REST PERMITTED' : 'OFFICIALLY VERIFIED'}</span>
                 </div>
             </div>
 
@@ -252,7 +254,7 @@ function renderHostelOutpassModal(data) {
                 <div class="outpass-student-details">
                     <div class="outpass-row">
                         <strong>Pass Reference ID:</strong>
-                        <span style="font-family:monospace; font-weight:700; color:#1e40af;">#OP-2026-00${leave.id}</span>
+                        <span style="font-family:monospace; font-weight:700; color:#1e40af;">#${isSickInHostel ? 'MED' : 'OP'}-2026-00${leave.id}</span>
                     </div>
                     <div class="outpass-row">
                         <strong>Hosteller Name:</strong>
@@ -272,19 +274,19 @@ function renderHostelOutpassModal(data) {
                     </div>
                     <div class="outpass-row">
                         <strong>Category:</strong>
-                        <span style="color:#1e40af; font-weight:700;">${escapeHtml(leave.leave_type || 'Hostel Outpass')}</span>
+                        <span style="color:${isSickInHostel ? '#059669' : '#1e40af'}; font-weight:700;">${escapeHtml(leave.leave_type || 'Hostel Outpass')}</span>
                     </div>
                     <div class="outpass-row">
-                        <strong>Valid Exit Time:</strong>
+                        <strong>${isSickInHostel ? 'Rest Start Time:' : 'Valid Exit Time:'}</strong>
                         <span style="color:#059669; font-weight:700;">${fromDateFormatted} @ ${fromTime}</span>
                     </div>
                     <div class="outpass-row">
-                        <strong>Valid Entry / Return:</strong>
+                        <strong>${isSickInHostel ? 'Resume Classes:' : 'Valid Entry / Return:'}</strong>
                         <span style="color:#dc2626; font-weight:700;">${toDateFormatted} @ ${toTime}</span>
                     </div>
                     <div class="outpass-row">
-                        <strong>Destination:</strong>
-                        <span>${escapeHtml(leave.destination_address || 'N/A')}</span>
+                        <strong>Stay Location:</strong>
+                        <span>${escapeHtml(leave.destination_address || 'In-Hostel Room')}</span>
                     </div>
                     <div class="outpass-row">
                         <strong>Parent Contact:</strong>
@@ -294,16 +296,16 @@ function renderHostelOutpassModal(data) {
 
                 <div class="outpass-qr-frame">
                     <div id="outpassQrCanvasContainer" style="display:flex; justify-content:center; align-items:center; min-height:170px;"></div>
-                    <div class="outpass-qr-caption">📷 Scan at Main Gate</div>
-                    <div style="font-size:0.7rem; color:#64748b; margin-top:0.25rem;">Pass ID: #OP-2026-00${leave.id}</div>
+                    <div class="outpass-qr-caption">${isSickInHostel ? '🏠 In-Campus Stay (No Exit)' : '📷 Scan at Main Gate'}</div>
+                    <div style="font-size:0.7rem; color:#64748b; margin-top:0.25rem;">Pass ID: #${isSickInHostel ? 'MED' : 'OP'}-2026-00${leave.id}</div>
                 </div>
             </div>
 
             <div class="outpass-verification-chain">
                 <div class="chain-item">✓ Parent OTP Verified</div>
-                <div class="chain-item">✓ Advisor Approved</div>
+                <div class="chain-item">✓ Advisor Approved (Attendance Exemption)</div>
                 <div class="chain-item">✓ HOD Authorized</div>
-                <div class="chain-item" style="color:#1e40af; font-weight:700;">✓ Warden Cleared (Gate Pass Active)</div>
+                <div class="chain-item" style="color:#1e40af; font-weight:700;">✓ Warden Cleared (${isSickInHostel ? 'Hostel Room Rest Active' : 'Gate Pass Active'})</div>
             </div>
         </div>
     `;

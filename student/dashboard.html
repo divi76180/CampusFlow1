@@ -135,12 +135,13 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label class="form-label">Leave Category *</label>
-                        <select name="leave_type" class="form-control form-select" required>
-                            <option value="Casual / Home Visit">Casual / Home Visit</option>
-                            <option value="Medical Leave">Medical Leave</option>
-                            <option value="On-Duty (OD)">On-Duty (OD / Technical Symposium)</option>
+                        <select name="leave_type" id="inputLeaveType" class="form-control form-select" required onchange="handleLeaveTypeChange(this.value)">
+                            <option value="Casual / Home Visit">Casual / Home Visit (Outpass)</option>
+                            <option value="Medical Leave (Staying in Hostel Room)">Medical Leave (Staying in Hostel Room / Sick Rest)</option>
+                            <option value="Medical Leave (Going Home / Hospital)">Medical Leave (Going Home / Outside Hospital)</option>
+                            <option value="Hostel Outpass (Weekend)">Hostel Weekend Outpass</option>
+                            <option value="On-Duty (OD)">On-Duty (OD / Symposium / Sports)</option>
                             <option value="Emergency Leave">Emergency Leave</option>
-                            <option value="Hostel Outpass">Hostel Weekend Outpass</option>
                         </select>
                     </div>
 
@@ -157,23 +158,24 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Departure Time</label>
+                            <label class="form-label">Departure / Rest Start Time</label>
                             <input type="time" name="from_time" class="form-control" value="08:00">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Expected Return Time</label>
+                            <label class="form-label">Expected Return / Class Resume Time</label>
                             <input type="time" name="to_time" class="form-control" value="18:00">
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Detailed Reason for Leave *</label>
-                        <textarea name="reason" rows="3" class="form-control" placeholder="Provide full justification for leave..." required></textarea>
+                        <textarea name="reason" id="inputLeaveReason" rows="3" class="form-control" placeholder="Provide reason or medical symptoms (e.g. viral fever, migraine rest)..." required></textarea>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Destination Address during Leave *</label>
-                        <input type="text" name="destination_address" class="form-control" placeholder="Full residential address during leave" required>
+                        <input type="text" name="destination_address" id="inputDestinationAddress" class="form-control" placeholder="Residential address or Hostel Room No." required>
+                        <small id="destHelpText" style="color:#64748b; font-size:0.75rem; display:block; margin-top:3px;">For In-Hostel Sick Rest, enter your hostel block &amp; room number.</small>
                     </div>
 
                     <div class="form-group">
@@ -296,16 +298,37 @@
 
             // Default dates
             const tmrw = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-            const endd = new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0];
-            const fromDateEl = document.getElementById('inputFromDate');
-            if (fromDateEl) fromDateEl.value = tmrw;
-            const toDateEl = document.getElementById('inputToDate');
-            if (toDateEl) toDateEl.value = endd;
+            const returnDate = new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0];
+            const fromDateInput = document.getElementById('inputFromDate');
+            const toDateInput = document.getElementById('inputToDate');
+            if (fromDateInput) fromDateInput.value = tmrw;
+            if (toDateInput) toDateInput.value = returnDate;
             const emContactEl = document.getElementById('inputEmergencyContact');
             if (emContactEl) emContactEl.value = currentUser.phone || '';
 
             await loadLeaves();
         });
+
+        function handleLeaveTypeChange(val) {
+            const destInput = document.getElementById('inputDestinationAddress');
+            const reasonInput = document.getElementById('inputLeaveReason');
+            const prof = currentUser?.profile || {};
+            
+            if (val.includes('Staying in Hostel Room') || val.includes('Sick Rest')) {
+                if (destInput) {
+                    const block = prof.hostel_block || 'Hostel Block';
+                    const room = prof.room_number || 'Room BH-304';
+                    destInput.value = `In-Hostel Room Rest (${block}, ${room} - No Gate Exit)`;
+                }
+                if (reasonInput && !reasonInput.value) {
+                    reasonInput.placeholder = "e.g. Severe headache and fever. Taking medical rest in hostel room.";
+                }
+            } else if (val.includes('Casual') || val.includes('Weekend')) {
+                if (destInput && destInput.value.includes('In-Hostel Room Rest')) {
+                    destInput.value = '';
+                }
+            }
+        }
 
         async function loadLeaves() {
             try {
