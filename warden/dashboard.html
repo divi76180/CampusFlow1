@@ -220,11 +220,11 @@
                     const isReady = (st.includes('Waiting for Warden') || l.current_stage === 'warden');
                     const isCompleted = st.toLowerCase().includes('completed');
 
-                    const stdName = l.students?.full_name || 'Hosteller';
-                    const regNo = l.students?.register_number || 'N/A';
-                    const dept = typeof formatStudentDepartment === 'function' ? formatStudentDepartment(l.students?.department, regNo) : (l.students?.department || 'IT');
-                    const hostelName = l.students?.hostel_block || 'Hostel Block';
-                    const room = l.students?.room_number || 'BH-304';
+                    const stdName = l.student_name || l.students?.full_name || 'Hosteller';
+                    const regNo = l.register_number || l.students?.register_number || 'N/A';
+                    const dept = typeof formatStudentDepartment === 'function' ? formatStudentDepartment(l.department || l.students?.department, regNo) : (l.department || 'IT');
+                    const hostelName = l.hostel_block || l.students?.hostel_block || 'Hostel Block';
+                    const room = l.room_number || l.students?.room_number || 'Room 101';
                     const fromDateStr = l.from_date ? new Date(l.from_date).toLocaleDateString('en-GB', {day:'numeric', month:'short'}) : 'N/A';
                     const toDateStr = l.to_date ? new Date(l.to_date).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'}) : 'N/A';
 

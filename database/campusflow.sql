@@ -41,6 +41,8 @@ CREATE TABLE IF NOT EXISTS `students` (
     `year` VARCHAR(10) NOT NULL,
     `section` VARCHAR(10) NOT NULL,
     `hostel_status` ENUM('hosteller', 'day_scholar') NOT NULL DEFAULT 'day_scholar',
+    `hostel_block` VARCHAR(100) NULL,
+    `room_number` VARCHAR(50) NULL,
     `parent_id` INT NULL,
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT `fk_students_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,

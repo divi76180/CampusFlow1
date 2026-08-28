@@ -167,33 +167,41 @@
 
                 // Filter leaves belonging strictly to this Advisor's assigned department, year & section
                 const leaves = allLeaves.filter(l => {
-                    const sDept = (l.students?.department || '').toLowerCase().trim();
-                    const sReg = (l.students?.register_number || '').toUpperCase().trim();
-                    const sYear = parseInt(l.students?.year || '3', 10);
-                    const sSec = (l.students?.section || 'A').toUpperCase().trim();
+                    const stdDept = l.department || l.students?.department || '';
+                    const stdReg = l.register_number || l.students?.register_number || '';
+                    const sDeptNorm = typeof formatStudentDepartment === 'function' ? formatStudentDepartment(stdDept, stdReg).toLowerCase() : stdDept.toLowerCase();
+                    const aDeptNorm = typeof formatStudentDepartment === 'function' ? formatStudentDepartment(advDept, '').toLowerCase() : advDept;
+
+                    const sYear = parseInt(l.year || l.students?.year || '3', 10);
+                    const sSec = (l.section || l.students?.section || 'A').toUpperCase().trim();
 
                     // Department match
                     let deptMatch = true;
                     if (advDept) {
-                        if (advDept.includes('computer') || advDept.includes('cse') || advDept.includes('cs')) {
-                            deptMatch = sDept.includes('computer') || sDept.includes('cse') || sReg.includes('CS');
-                        } else if (advDept.includes('information') || advDept.includes('it')) {
-                            deptMatch = sDept.includes('information') || sDept.includes('it') || sReg.includes('IT');
-                        } else if (advDept.includes('electronics') || advDept.includes('ece')) {
-                            deptMatch = sDept.includes('electronics') || sDept.includes('ece') || sReg.includes('EC');
-                        } else if (advDept.includes('mechanical') || advDept.includes('mech')) {
-                            deptMatch = sDept.includes('mechanical') || sDept.includes('mech') || sReg.includes('ME');
-                        } else if (advDept.includes('civil')) {
-                            deptMatch = sDept.includes('civil') || sReg.includes('CI') || sReg.includes('CE');
-                        } else {
-                            deptMatch = sDept.includes(advDept) || advDept.includes(sDept);
-                        }
+                        deptMatch = sDeptNorm === aDeptNorm || 
+                                    sDeptNorm.includes(advDept) || advDept.includes(sDeptNorm) ||
+                                    (advDept.includes('computer') && sDeptNorm.includes('computer')) ||
+                                    (advDept.includes('information') && sDeptNorm.includes('information')) ||
+                                    (advDept.includes('artificial') && sDeptNorm.includes('artificial')) ||
+                                    (advDept.includes('electronics') && sDeptNorm.includes('electronics')) ||
+                                    (advDept.includes('electrical') && sDeptNorm.includes('electrical')) ||
+                                    (advDept.includes('mechanical') && sDeptNorm.includes('mechanical')) ||
+                                    (advDept.includes('civil') && sDeptNorm.includes('civil')) ||
+                                    (advDept.includes('mechatronics') && sDeptNorm.includes('mechatronics')) ||
+                                    (advDept.includes('biotechnology') && sDeptNorm.includes('biotechnology')) ||
+                                    (advDept.includes('chemical') && sDeptNorm.includes('chemical'));
                     }
 
                     // Year & Section match
                     let classMatch = true;
-                    if (advYear && sYear && sYear !== advYear) classMatch = false;
-                    if (advSec && advSec !== 'ALL' && sSec && sSec !== advSec) classMatch = false;
+                    if (advYear && advYear !== 0 && sYear && sYear !== advYear) classMatch = false;
+                    if (advSec && advSec !== 'ALL' && advSec !== '' && sSec) {
+                        // If advSec is '3-A', strip year prefix
+                        const cleanAdvSec = advSec.replace(/^[0-9\-_]+/, '').trim() || advSec;
+                        if (cleanAdvSec !== 'ALL' && cleanAdvSec !== sSec) {
+                            classMatch = false;
+                        }
+                    }
 
                     return deptMatch && classMatch;
                 });

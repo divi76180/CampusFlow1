@@ -91,6 +91,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="assets/js/supabase_client.js"></script>
+    <script src="assets/js/dashboard.js"></script>
     <script src="assets/js/qrcode.js"></script>
     <script>
         async function verifyOutpass() {
@@ -133,44 +134,51 @@
                     return;
                 }
 
-                const isCompleted = leave.status.toLowerCase().includes('completed') || leave.status.toLowerCase().includes('warden approved');
+                const isCompleted = (leave.status || '').toLowerCase().includes('completed') || (leave.status || '').toLowerCase().includes('warden approved');
+                const deptFormatted = typeof formatStudentDepartment === 'function' ? formatStudentDepartment(leave.department, leave.register_number) : (leave.department || 'Engineering');
+                const fromDateFormatted = leave.from_date ? new Date(leave.from_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
+                const toDateFormatted = leave.to_date ? new Date(leave.to_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
 
                 if (isCompleted) {
                     container.innerHTML = `
                         <div class="result-verified">
                             <div style="font-size:2.5rem; margin-bottom:0.25rem;">✅</div>
-                            <h2 style="color:#059669; margin-bottom:0.25rem;">PASS AUTHORIZED & ACTIVE</h2>
+                            <h2 style="color:#059669; margin-bottom:0.25rem;">PASS AUTHORIZED &amp; ACTIVE</h2>
                             <div style="font-size:0.85rem; color:#065f46; margin-bottom:1rem; font-weight:700;">PERMIT HOSTELLER GATE EXIT / ENTRY</div>
 
                             <div style="background:#fff; border:1px solid #a7f3d0; border-radius:8px; padding:1rem; text-align:left; font-size:0.9rem; color:#0f172a;">
                                 <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem;">
                                     <strong>Hosteller Name:</strong>
-                                    <span>${leave.student_name}</span>
+                                    <span>${escapeHtml(leave.student_name || 'Student')}</span>
                                 </div>
                                 <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem;">
                                     <strong>Register Number:</strong>
-                                    <span><strong>${leave.register_number}</strong></span>
+                                    <span><strong style="color:#1e40af;">${escapeHtml(leave.register_number || 'N/A')}</strong></span>
                                 </div>
                                 <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem;">
                                     <strong>Department:</strong>
-                                    <span>${leave.department}</span>
+                                    <span>${escapeHtml(deptFormatted)} (${leave.year || 3}-${leave.section || 'A'})</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem;">
+                                    <strong>Hostel Details:</strong>
+                                    <span style="color:#d97706; font-weight:600;">🏠 ${escapeHtml(leave.hostel_block || 'Hostel')}${leave.room_number ? ` (${escapeHtml(leave.room_number)})` : ''}</span>
                                 </div>
                                 <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem;">
                                     <strong>Valid Leave Dates:</strong>
-                                    <span style="color:#059669; font-weight:700;">${leave.from_date} to ${leave.to_date}</span>
+                                    <span style="color:#059669; font-weight:700;">${fromDateFormatted} to ${toDateFormatted}</span>
                                 </div>
                                 <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem;">
                                     <strong>Destination:</strong>
-                                    <span>${leave.destination_address}</span>
+                                    <span>${escapeHtml(leave.destination_address || 'N/A')}</span>
                                 </div>
                                 <div style="display:flex; justify-content:space-between;">
                                     <strong>Parent Contact:</strong>
-                                    <span>${leave.emergency_contact || leave.parent_phone || 'N/A'}</span>
+                                    <span>+91 ${escapeHtml(leave.emergency_contact || leave.parent_phone || 'N/A')}</span>
                                 </div>
                             </div>
 
                             <div style="margin-top:0.75rem; font-size:0.75rem; color:#047857;">
-                                ✓ Parent OTP Verified • ✓ Advisor Approved • ✓ HOD Authorized • ✓ Warden Cleared
+                                ✓ Parent OTP Verified &bull; ✓ Advisor Approved &bull; ✓ HOD Authorized &bull; ✓ Warden Cleared
                             </div>
                         </div>
                     `;
@@ -179,7 +187,7 @@
                         <div class="result-invalid">
                             <div style="font-size:2.5rem; margin-bottom:0.25rem;">⚠️</div>
                             <h2 style="color:#dc2626; margin-bottom:0.25rem;">OUTPASS NOT YET AUTHORIZED</h2>
-                            <p style="color:#991b1b; font-weight:600;">Current Status: ${leave.status}</p>
+                            <p style="color:#991b1b; font-weight:600;">Current Status: ${escapeHtml(leave.status || 'Pending')}</p>
                             <p style="color:#7f1d1d; font-size:0.85rem; margin-top:0.4rem;">This request has not received final clearance from the Warden. Student cannot exit campus.</p>
                         </div>
                     `;

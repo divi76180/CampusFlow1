@@ -165,22 +165,24 @@
 
                 // Filter leaves belonging strictly to this HOD's department
                 const leaves = allLeaves.filter(l => {
-                    const sDept = (l.students?.department || '').toLowerCase().trim();
-                    const sReg = (l.students?.register_number || '').toUpperCase().trim();
+                    const stdDept = l.department || l.students?.department || '';
+                    const stdReg = l.register_number || l.students?.register_number || '';
+                    const sDeptNorm = typeof formatStudentDepartment === 'function' ? formatStudentDepartment(stdDept, stdReg).toLowerCase() : stdDept.toLowerCase();
+                    const hDeptNorm = typeof formatStudentDepartment === 'function' ? formatStudentDepartment(hodDept, '').toLowerCase() : hodDept;
 
                     if (!hodDept) return true;
-                    if (hodDept.includes('computer') || hodDept.includes('cse') || hodDept.includes('cs')) {
-                        return sDept.includes('computer') || sDept.includes('cse') || sReg.includes('CS');
-                    } else if (hodDept.includes('information') || hodDept.includes('it')) {
-                        return sDept.includes('information') || sDept.includes('it') || sReg.includes('IT');
-                    } else if (hodDept.includes('electronics') || hodDept.includes('ece')) {
-                        return sDept.includes('electronics') || sDept.includes('ece') || sReg.includes('EC');
-                    } else if (hodDept.includes('mechanical') || hodDept.includes('mech')) {
-                        return sDept.includes('mechanical') || sDept.includes('mech') || sReg.includes('ME');
-                    } else if (hodDept.includes('civil')) {
-                        return sDept.includes('civil') || sReg.includes('CI') || sReg.includes('CE');
-                    }
-                    return sDept.includes(hodDept) || hodDept.includes(sDept);
+                    return sDeptNorm === hDeptNorm ||
+                           sDeptNorm.includes(hodDept) || hodDept.includes(sDeptNorm) ||
+                           (hodDept.includes('computer') && sDeptNorm.includes('computer')) ||
+                           (hodDept.includes('information') && sDeptNorm.includes('information')) ||
+                           (hodDept.includes('artificial') && sDeptNorm.includes('artificial')) ||
+                           (hodDept.includes('electronics') && sDeptNorm.includes('electronics')) ||
+                           (hodDept.includes('electrical') && sDeptNorm.includes('electrical')) ||
+                           (hodDept.includes('mechanical') && sDeptNorm.includes('mechanical')) ||
+                           (hodDept.includes('civil') && sDeptNorm.includes('civil')) ||
+                           (hodDept.includes('mechatronics') && sDeptNorm.includes('mechatronics')) ||
+                           (hodDept.includes('biotechnology') && sDeptNorm.includes('biotechnology')) ||
+                           (hodDept.includes('chemical') && sDeptNorm.includes('chemical'));
                 });
 
                 const tbody = document.getElementById('hodTableBody');

@@ -340,15 +340,35 @@ function renderSignupFormFields(role, container) {
                 <div class="form-group">
                     <label class="form-label">Department *</label>
                     <select name="department" class="form-control form-select" required>
-                        <option value="Computer Science and Engineering">Computer Science and Engineering</option>
-                        <option value="Electronics and Communication">Electronics & Communication</option>
-                        <option value="Information Technology">Information Technology</option>
-                        <option value="Mechanical Engineering">Mechanical Engineering</option>
+                        <option value="Information Technology">Information Technology (IT)</option>
+                        <option value="Computer Science and Engineering" selected>Computer Science and Engineering (CSE)</option>
+                        <option value="Artificial Intelligence and Data Science">Artificial Intelligence &amp; Data Science (AI &amp; DS)</option>
+                        <option value="Electronics and Communication">Electronics &amp; Communication (ECE)</option>
+                        <option value="Electrical and Electronics Engineering">Electrical &amp; Electronics (EEE)</option>
+                        <option value="Mechanical Engineering">Mechanical Engineering (MECH)</option>
+                        <option value="Civil Engineering">Civil Engineering (CIVIL)</option>
+                        <option value="Mechatronics Engineering">Mechatronics Engineering (MTS)</option>
+                        <option value="Biotechnology">Biotechnology (BT)</option>
+                        <option value="Chemical Engineering">Chemical Engineering (CHEM)</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Class / Section Handled *</label>
-                    <input type="text" name="section_handled" class="form-control" placeholder="e.g. 3-A or Year 3 Section A" required>
+                    <label class="form-label">Assigned Year &amp; Section *</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                        <select name="assigned_year" class="form-control form-select" required>
+                            <option value="1">Year 1</option>
+                            <option value="2">Year 2</option>
+                            <option value="3" selected>Year 3</option>
+                            <option value="4">Year 4</option>
+                            <option value="ALL">All Years</option>
+                        </select>
+                        <select name="assigned_section" class="form-control form-select" required>
+                            <option value="A" selected>Section A</option>
+                            <option value="B">Section B</option>
+                            <option value="C">Section C</option>
+                            <option value="ALL">All Sections</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         `;
@@ -377,11 +397,16 @@ function renderSignupFormFields(role, container) {
             <div class="form-group">
                 <label class="form-label">Department *</label>
                 <select name="department" class="form-control form-select" required>
-                    <option value="Computer Science and Engineering">Computer Science and Engineering</option>
-                    <option value="Electronics and Communication">Electronics & Communication</option>
-                    <option value="Information Technology">Information Technology</option>
-                    <option value="Mechanical Engineering">Mechanical Engineering</option>
-                    <option value="Civil Engineering">Civil Engineering</option>
+                    <option value="Information Technology">Information Technology (IT)</option>
+                    <option value="Computer Science and Engineering" selected>Computer Science and Engineering (CSE)</option>
+                    <option value="Artificial Intelligence and Data Science">Artificial Intelligence &amp; Data Science (AI &amp; DS)</option>
+                    <option value="Electronics and Communication">Electronics &amp; Communication (ECE)</option>
+                    <option value="Electrical and Electronics Engineering">Electrical &amp; Electronics (EEE)</option>
+                    <option value="Mechanical Engineering">Mechanical Engineering (MECH)</option>
+                    <option value="Civil Engineering">Civil Engineering (CIVIL)</option>
+                    <option value="Mechatronics Engineering">Mechatronics Engineering (MTS)</option>
+                    <option value="Biotechnology">Biotechnology (BT)</option>
+                    <option value="Chemical Engineering">Chemical Engineering (CHEM)</option>
                 </select>
             </div>
         `;

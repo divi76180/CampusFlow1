@@ -3,7 +3,7 @@ function formatStudentDepartment(dept, regNo) {
         const u = String(regNo).toUpperCase().trim();
         if (u.includes('ITR') || u.includes('IT')) return 'Information Technology (IT)';
         if (u.includes('CSR') || u.includes('CSE') || u.includes('CS')) return 'Computer Science and Engineering (CSE)';
-        if (u.includes('ADR') || u.includes('AIDS') || u.includes('AD')) return 'Artificial Intelligence and Data Science (AI & DS)';
+        if (u.includes('ADR') || u.includes('AIDS') || u.includes('AD')) return 'Artificial Intelligence & Data Science (AI & DS)';
         if (u.includes('ECR') || u.includes('ECE') || u.includes('EC')) return 'Electronics & Communication (ECE)';
         if (u.includes('EER') || u.includes('EEE') || u.includes('EE')) return 'Electrical & Electronics (EEE)';
         if (u.includes('MER') || u.includes('MECH') || u.includes('ME')) return 'Mechanical Engineering (MECH)';
@@ -13,14 +13,17 @@ function formatStudentDepartment(dept, regNo) {
         if (u.includes('CHR') || u.includes('CHEM')) return 'Chemical Engineering (CHEM)';
     }
     if (dept) {
-        const d = String(dept).toLowerCase();
+        const d = String(dept).toLowerCase().trim();
         if (d.includes('information') || d === 'it') return 'Information Technology (IT)';
-        if (d.includes('computer') || d === 'cse') return 'Computer Science and Engineering (CSE)';
-        if (d.includes('mechanical') || d === 'mech') return 'Mechanical Engineering (MECH)';
-        if (d.includes('electronics') || d === 'ece') return 'Electronics & Communication (ECE)';
-        if (d.includes('electrical') || d === 'eee') return 'Electrical & Electronics (EEE)';
-        if (d.includes('civil')) return 'Civil Engineering (CIVIL)';
-        if (d.includes('artificial') || d === 'aids') return 'AI & Data Science (AI & DS)';
+        if (d.includes('computer') || d.includes('cse') || d === 'cs') return 'Computer Science and Engineering (CSE)';
+        if (d.includes('artificial') || d.includes('aids') || d.includes('ai & ds')) return 'Artificial Intelligence & Data Science (AI & DS)';
+        if (d.includes('electronics') || d.includes('ece') || d === 'ec') return 'Electronics & Communication (ECE)';
+        if (d.includes('electrical') || d.includes('eee') || d === 'ee') return 'Electrical & Electronics (EEE)';
+        if (d.includes('mechanical') || d.includes('mech') || d === 'me') return 'Mechanical Engineering (MECH)';
+        if (d.includes('civil') || d === 'ce') return 'Civil Engineering (CIVIL)';
+        if (d.includes('mechatronics') || d.includes('mts')) return 'Mechatronics Engineering (MTS)';
+        if (d.includes('biotechnology') || d.includes('bt')) return 'Biotechnology (BT)';
+        if (d.includes('chemical') || d.includes('chem')) return 'Chemical Engineering (CHEM)';
         return dept;
     }
     return 'Engineering';
@@ -36,6 +39,7 @@ function openModal(modalId) {
         modal.classList.add('active');
     }
 }
+window.openModal = openModal;
 
 /**
  * Close a specific modal by ID
@@ -50,6 +54,7 @@ function closeModal(modalId) {
         }
     }
 }
+window.closeModal = closeModal;
 
 document.addEventListener('DOMContentLoaded', () => {
     // Close modal on click outside or close button
@@ -80,94 +85,135 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
- * Render Letterhead Preview inside a container
+ * Render Official Leave Application Letterhead Modal
+ * @param {Object} data - Can be { leave: {...}, approvals: [...] } or direct leave object
  */
-function renderLetterhead(leave) {
-    const letterContainer = document.getElementById('letterheadContent');
-    if (!letterContainer) return;
+function renderLeaveLetterModal(data) {
+    if (!data) return;
+    const leaveContainer = document.getElementById('letterheadContent');
+    if (!leaveContainer) return;
+
+    const leave = data.leave || data || {};
+    const approvals = data.approvals || leave.approvals || [];
 
     const fromDateFormatted = leave.from_date ? new Date(leave.from_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
     const toDateFormatted = leave.to_date ? new Date(leave.to_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
+    const fromTimeStr = leave.from_time ? leave.from_time.substring(0, 5) : '08:00';
+    const toTimeStr = leave.to_time ? leave.to_time.substring(0, 5) : '18:00';
     const createdFormatted = new Date(leave.created_at || Date.now()).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    
     const stdName = leave.student_name || leave.students?.full_name || 'Student';
     const regNo = leave.register_number || leave.students?.register_number || 'N/A';
     const dept = formatStudentDepartment(leave.department || leave.students?.department, regNo);
     const yr = leave.year || leave.students?.year || 3;
     const sec = leave.section || leave.students?.section || 'A';
-    const hostelSt = (leave.hostel_status || leave.students?.hostel_status || 'day_scholar').replace('_', ' ');
-    const statusText = leave.status || 'Pending';
+    const hostelStatus = (leave.hostel_status || leave.students?.hostel_status || 'day_scholar').toLowerCase();
+    const isHosteller = hostelStatus === 'hosteller';
+    const hostelBlock = leave.hostel_block || leave.students?.hostel_block || 'Hostel Block';
+    const roomNo = leave.room_number || leave.students?.room_number || '';
+    const statusText = leave.status || 'Waiting for Parent';
+    const parentName = leave.parent_name || 'Parent / Guardian';
+    const parentPhone = leave.parent_phone || leave.emergency_contact || 'Registered Mobile';
 
-    letterContainer.innerHTML = `
+    const parentApprovedInTrail = approvals && approvals.some(a => a.approver_role === 'parent' && a.action === 'approved');
+    const isParentApproved = statusText.includes('Parent Approved') || statusText.includes('Advisor Approved') || statusText.includes('Waiting for Warden') || statusText.toLowerCase().includes('completed') || parentApprovedInTrail;
+
+    leaveContainer.innerHTML = `
         <div class="letterhead-doc">
             <div class="letterhead-header">
-                <h2>CampusFlow Digital Leave Portal</h2>
-                <p>Department of ${escapeHtml(dept)} | Official Authorization Form</p>
+                <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.08em; color:#64748b; font-weight:700; margin-bottom:0.25rem;">
+                    CampusFlow &bull; Digital Leave &amp; Outpass Management System
+                </div>
+                <h2>CampusFlow College of Engineering &amp; Technology</h2>
+                <p style="margin-top:0.25rem; font-weight:600; color:#1e40af;">
+                    Department of ${escapeHtml(dept)} &bull; Official Leave Application
+                </p>
+                <div style="margin-top:0.4rem; font-size:0.75rem; color:#64748b; font-family:monospace; font-weight:700;">
+                    Application Ref: #LR-2026-00${leave.id || '1'} &bull; Date: ${createdFormatted}
+                </div>
             </div>
 
             <div class="letterhead-meta">
                 <div>
-                    <strong>Date Submitted:</strong> ${createdFormatted}<br>
-                    <strong>Student Name:</strong> ${escapeHtml(stdName)} (${escapeHtml(regNo)})<br>
-                    <strong>Department & Year:</strong> ${escapeHtml(dept)} - Year ${yr}, Sec ${sec}<br>
-                    <strong>Hostel Status:</strong> <span style="text-transform:capitalize; font-weight:700;">${escapeHtml(hostelSt)}</span>
+                    <strong>Student Name:</strong> ${escapeHtml(stdName)}<br>
+                    <strong>Register Number:</strong> <span style="font-family:monospace; font-weight:700; color:#1e40af;">${escapeHtml(regNo)}</span><br>
+                    <strong>Department &amp; Class:</strong> ${escapeHtml(dept)} &bull; Year ${yr}, Sec ${sec}<br>
+                    <strong>Hostel Status:</strong> <span class="meta-pill ${isHosteller ? 'hosteller' : 'day-scholar'}" style="font-size:0.75rem; padding:2px 8px;">${isHosteller ? `🏢 Hosteller (${escapeHtml(hostelBlock)}${roomNo ? `, Room ${escapeHtml(roomNo)}` : ''})` : '🏠 Day Scholar'}</span>
                 </div>
                 <div>
-                    <strong>Parent / Guardian:</strong> ${escapeHtml(leave.parent_name || 'Parent')}<br>
-                    <strong>Emergency Contact:</strong> ${escapeHtml(leave.emergency_contact || leave.parent_phone || 'N/A')}<br>
+                    <strong>Parent / Guardian:</strong> ${escapeHtml(parentName)}<br>
+                    <strong>Contact Number:</strong> +91 ${escapeHtml(parentPhone)}<br>
                     <strong>Leave Category:</strong> <span style="color:#1e40af; font-weight:700;">${escapeHtml(leave.leave_type || 'Leave Request')}</span><br>
                     <strong>Current Status:</strong> <span class="status-badge ${getStatusClass(statusText)}">${escapeHtml(statusText)}</span>
                 </div>
             </div>
 
             <div class="letterhead-body">
-                <p><strong>To,</strong><br>
-                   • <strong>Parent / Guardian:</strong> ${escapeHtml(leave.parent_name || 'Parent')} (+91 ${escapeHtml(leave.parent_phone || leave.emergency_contact || 'Registered Mobile')})<br>
-                   • <strong>Class Advisor:</strong> Class Advisor (${escapeHtml(dept)} - Year ${yr}, Sec ${sec})<br>
-                   • <strong>Head of Department:</strong> Department of ${escapeHtml(dept)}<br>
-                   ${hostelSt === 'hosteller' ? `• <strong>Hostel Warden:</strong> ${escapeHtml(leave.hostel_block || leave.students?.hostel_block || 'Hostel Block In-Charge')}<br>` : ''}
-                   <em>CampusFlow College of Engineering &amp; Technology</em>
+                <p style="margin-bottom:0.75rem;">
+                    <strong>To:</strong><br>
+                    &bull; <strong>Parent / Guardian:</strong> ${escapeHtml(parentName)} (+91 ${escapeHtml(parentPhone)})<br>
+                    &bull; <strong>Class Advisor:</strong> Class Advisor (${escapeHtml(dept)} - Year ${yr}, Sec ${sec})<br>
+                    &bull; <strong>Head of Department:</strong> Department of ${escapeHtml(dept)}<br>
+                    ${isHosteller ? `&bull; <strong>Hostel Warden:</strong> ${escapeHtml(hostelBlock)}<br>` : ''}
+                    <em>CampusFlow College of Engineering &amp; Technology</em>
                 </p>
-                <br>
-                <p><strong>Respected Sir / Madam,</strong></p>
-                <p>
-                    I, <strong>${escapeHtml(stdName)}</strong> (Register No: <strong>${escapeHtml(regNo)}</strong>), studying in the Department of ${escapeHtml(dept)}, kindly request you to grant me leave from <strong>${fromDateFormatted}</strong> (${leave.from_time ? leave.from_time.substring(0,5) : '08:00 AM'}) to <strong>${toDateFormatted}</strong> (${leave.to_time ? leave.to_time.substring(0,5) : '06:00 PM'}).
+
+                <p style="margin-bottom:0.75rem; font-weight:700; color:#0f172a;">
+                    Sub: Application for Leave of Absence (${escapeHtml(leave.leave_type || 'Leave')}) - Reg.
                 </p>
-                <br>
-                <p>
+
+                <p style="margin-bottom:0.75rem;"><strong>Respected Sir / Madam,</strong></p>
+                <p style="margin-bottom:0.75rem;">
+                    I, <strong>${escapeHtml(stdName)}</strong> (Register No: <strong>${escapeHtml(regNo)}</strong>), student of ${escapeHtml(dept)}, Year ${yr}, Section ${sec}, request your kind permission to grant me leave of absence from <strong>${fromDateFormatted} (${fromTimeStr})</strong> to <strong>${toDateFormatted} (${toTimeStr})</strong>.
+                </p>
+
+                <p style="margin-bottom:0.75rem;">
                     <strong>Reason for Leave:</strong><br>
-                    <em>"${escapeHtml(leave.reason || 'N/A')}"</em>
+                    <span style="background:#f8fafc; display:block; border-left:3px solid #2563eb; padding:0.5rem 0.75rem; margin-top:0.25rem; font-style:italic;">
+                        "${escapeHtml(leave.reason || 'N/A')}"
+                    </span>
                 </p>
-                <br>
-                <p>
+
+                <p style="margin-bottom:0.75rem;">
                     <strong>Destination Address during Leave:</strong><br>
-                    ${escapeHtml(leave.destination_address || 'N/A')}
+                    <span style="color:#334155; font-weight:500;">${escapeHtml(leave.destination_address || 'N/A')}</span>
                 </p>
             </div>
 
             <div class="letterhead-footer">
                 <div>
                     <strong>Parent Authorization Verification:</strong><br>
-                    ${statusText.includes('Parent Approved') || (approvals && approvals.some(a => a.approver_role === 'parent'))
-                        ? `<div style="margin-top:0.25rem;">
-                             <span class="status-badge status-green" style="display:inline-block; margin-bottom:0.25rem;">✅ Verified via SMS OTP (Phone: ${escapeHtml(leave.parent_phone || leave.emergency_contact || 'Registered Phone')})</span>
-                             <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">6-Digit Cryptographic OTP Security Confirmed</div>
+                    ${isParentApproved 
+                        ? `<div style="margin-top:0.35rem;">
+                             <span class="status-badge status-green" style="display:inline-block; font-size:0.78rem;">✅ Verified via SMS OTP (Phone: +91 ${escapeHtml(parentPhone)})</span>
+                             <div style="font-size:0.72rem; color:#64748b; margin-top:3px;">6-Digit Cryptographic OTP Security Confirmed</div>
                            </div>` 
-                        : '<span style="color:#d97706; font-size:0.85rem; font-weight:600;">⏳ Pending Parent SMS OTP Authorization</span>'}
+                        : `<div style="margin-top:0.35rem;">
+                             <span class="status-badge status-yellow" style="display:inline-block; font-size:0.78rem;">⏳ Pending Parent SMS OTP Authorization</span>
+                             <div style="font-size:0.72rem; color:#94a3b8; margin-top:3px;">Parent verification required to advance to Class Advisor</div>
+                           </div>`}
                 </div>
                 <div style="text-align: right;">
-                    <strong>Student Signature:</strong><br>
-                    <span style="font-family:cursive; font-size:1.1rem; color:#1e3a8a;">${escapeHtml(stdName)}</span>
+                    <strong>Student Digital Signature:</strong><br>
+                    <span style="font-family:cursive, 'Brush Script MT', sans-serif; font-size:1.25rem; color:#1e3a8a; display:inline-block; margin-top:4px;">
+                        ${escapeHtml(stdName)}
+                    </span>
+                    <div style="font-size:0.7rem; color:#94a3b8; font-family:monospace;">Reg: ${escapeHtml(regNo)} &bull; ${createdFormatted}</div>
                 </div>
             </div>
         </div>
 
         <!-- Approval Progression History -->
         <div style="margin-top: 1.5rem;">
-            <h4 style="font-size: 1rem; margin-bottom: 0.75rem; color: #0f172a;">Audit Trail & Approvals History</h4>
+            <h4 style="font-size: 1rem; margin-bottom: 0.75rem; color: #0f172a; display:flex; align-items:center; gap:6px;">
+                <span>📋</span> Approval Progression &amp; Audit Trail
+            </h4>
             ${renderApprovalsAudit(approvals)}
         </div>
     `;
 }
+window.renderLeaveLetterModal = renderLeaveLetterModal;
+window.renderLetterhead = renderLeaveLetterModal;
 
 function renderHostelOutpassModal(data) {
     if (!data) return;
@@ -181,9 +227,11 @@ function renderHostelOutpassModal(data) {
     const toTime = leave.to_time ? leave.to_time.substring(0, 5) : '18:00';
     const stdName = leave.student_name || leave.students?.full_name || 'Hosteller';
     const regNo = leave.register_number || leave.students?.register_number || 'N/A';
-    const dept = leave.department || leave.students?.department || 'Engineering';
+    const dept = formatStudentDepartment(leave.department || leave.students?.department, regNo);
     const yr = leave.year || leave.students?.year || 3;
     const sec = leave.section || leave.students?.section || 'A';
+    const hostelName = leave.hostel_block || leave.students?.hostel_block || 'Hostel Block';
+    const roomNo = leave.room_number || leave.students?.room_number || '';
 
     const securityUrl = `${window.location.origin}/security_gate.html?pass_id=${leave.id}&reg=${encodeURIComponent(regNo)}&status=VALID`;
 
@@ -192,7 +240,7 @@ function renderHostelOutpassModal(data) {
             <div class="outpass-topbar">
                 <div>
                     <div class="outpass-topbar-brand">CampusFlow Digital Gate Pass</div>
-                    <div style="font-size:0.75rem; color:#cbd5e1; letter-spacing:0.03em;">HOSTEL OUTPASS & SECURITY CLEARANCE</div>
+                    <div style="font-size:0.75rem; color:#cbd5e1; letter-spacing:0.03em;">HOSTEL OUTPASS &amp; SECURITY CLEARANCE</div>
                 </div>
                 <div class="outpass-security-badge">
                     <span>🛡️</span>
@@ -208,19 +256,23 @@ function renderHostelOutpassModal(data) {
                     </div>
                     <div class="outpass-row">
                         <strong>Hosteller Name:</strong>
-                        <span><strong>${leave.student_name}</strong></span>
+                        <span><strong>${escapeHtml(stdName)}</strong></span>
                     </div>
                     <div class="outpass-row">
                         <strong>Register Number:</strong>
-                        <span>${leave.register_number}</span>
+                        <span style="font-family:monospace; font-weight:700;">${escapeHtml(regNo)}</span>
                     </div>
                     <div class="outpass-row">
-                        <strong>Department & Class:</strong>
-                        <span>${leave.department} (${leave.year || '3'}-${leave.section || 'A'})</span>
+                        <strong>Department &amp; Class:</strong>
+                        <span>${escapeHtml(dept)} (${yr}-${sec})</span>
+                    </div>
+                    <div class="outpass-row">
+                        <strong>Hostel &amp; Room:</strong>
+                        <span style="color:#d97706; font-weight:600;">🏠 ${escapeHtml(hostelName)}${roomNo ? ` (${escapeHtml(roomNo)})` : ''}</span>
                     </div>
                     <div class="outpass-row">
                         <strong>Category:</strong>
-                        <span style="color:#1e40af; font-weight:700;">${leave.leave_type}</span>
+                        <span style="color:#1e40af; font-weight:700;">${escapeHtml(leave.leave_type || 'Hostel Outpass')}</span>
                     </div>
                     <div class="outpass-row">
                         <strong>Valid Exit Time:</strong>
@@ -232,11 +284,11 @@ function renderHostelOutpassModal(data) {
                     </div>
                     <div class="outpass-row">
                         <strong>Destination:</strong>
-                        <span>${escapeHtml(leave.destination_address)}</span>
+                        <span>${escapeHtml(leave.destination_address || 'N/A')}</span>
                     </div>
                     <div class="outpass-row">
                         <strong>Parent Contact:</strong>
-                        <span>${leave.emergency_contact || leave.parent_phone || 'N/A'}</span>
+                        <span>+91 ${escapeHtml(leave.parent_phone || leave.emergency_contact || 'N/A')}</span>
                     </div>
                 </div>
 
@@ -274,6 +326,7 @@ function renderHostelOutpassModal(data) {
         }
     }
 }
+window.renderHostelOutpassModal = renderHostelOutpassModal;
 
 /**
  * View Leave Letter in Official Letterhead Modal
@@ -302,9 +355,10 @@ async function viewLeaveLetter(leaveId) {
 
     } catch (err) {
         console.error(err);
-        alert('Error fetching leave details.');
+        alert('Error fetching leave details: ' + err.message);
     }
 }
+window.viewLeaveLetter = viewLeaveLetter;
 
 /**
  * Open Voice Approval Modal for Parent
@@ -641,3 +695,7 @@ async function viewHostelOutpass(leaveId) {
         alert('Error loading outpass details: ' + err.message);
     }
 }
+window.getStatusClass = getStatusClass;
+window.escapeHtml = escapeHtml;
+window.renderApprovalsAudit = renderApprovalsAudit;
+window.viewHostelOutpass = viewHostelOutpass;

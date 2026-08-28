@@ -250,12 +250,23 @@
         try {
             const { data, error } = await sb
                 .from('leave_requests')
-                .select('*')
+                .select(`
+                    *,
+                    students (
+                        id, register_number, full_name, department, year, section, hostel_status, hostel_block, room_number, parent_id
+                    )
+                `)
                 .eq('student_id', studentId)
                 .order('id', { ascending: false });
-            if (error) {
-                console.error('getStudentLeaves error:', error);
-                return [];
+
+            if (error || !data) {
+                console.warn('getStudentLeaves with join error, trying direct query:', error);
+                const { data: rawData, error: rawErr } = await sb
+                    .from('leave_requests')
+                    .select('*')
+                    .eq('student_id', studentId)
+                    .order('id', { ascending: false });
+                return rawData || [];
             }
             return data || [];
         } catch (err) {
@@ -273,10 +284,19 @@
                 .select(`
                     *,
                     students (
-                        id, register_number, full_name, department, year, section, hostel_status, room_number, parent_id
+                        id, register_number, full_name, department, year, section, hostel_status, hostel_block, room_number, parent_id
                     )
                 `)
                 .order('id', { ascending: false });
+
+            // Fetch parents to map parent phone/name if missing
+            const { data: allParents } = await sb.from('parents').select('*');
+            const parentById = {};
+            const parentByReg = {};
+            (allParents || []).forEach(p => {
+                if (p.id) parentById[p.id] = p;
+                if (p.student_reg_no) parentByReg[p.student_reg_no.trim().toUpperCase()] = p;
+            });
 
             if (error || !data) {
                 console.warn('getAllLeaves with join failed, trying fallback direct query:', error);
@@ -292,12 +312,37 @@
                 const studentMap = {};
                 (allStudents || []).forEach(s => { studentMap[s.id] = s; });
 
-                return rawLeaves.map(l => ({
-                    ...l,
-                    students: studentMap[l.student_id] || null
-                }));
+                return rawLeaves.map(l => {
+                    const std = studentMap[l.student_id] || null;
+                    const par = (std && std.parent_id && parentById[std.parent_id]) || (std && std.register_number && parentByReg[std.register_number.trim().toUpperCase()]) || null;
+                    return {
+                        ...l,
+                        students: std,
+                        student_name: std?.full_name || l.student_name || 'Student',
+                        register_number: std?.register_number || l.register_number || 'N/A',
+                        department: std?.department || l.department || 'Engineering',
+                        hostel_block: std?.hostel_block || l.hostel_block || '',
+                        room_number: std?.room_number || l.room_number || '',
+                        parent_name: par?.full_name || l.parent_name || 'Parent',
+                        parent_phone: par?.phone_number || l.emergency_contact || l.parent_phone || 'N/A'
+                    };
+                });
             }
-            return data || [];
+
+            return (data || []).map(l => {
+                const std = l.students;
+                const par = (std && std.parent_id && parentById[std.parent_id]) || (std && std.register_number && parentByReg[std.register_number.trim().toUpperCase()]) || null;
+                return {
+                    ...l,
+                    student_name: std?.full_name || l.student_name || 'Student',
+                    register_number: std?.register_number || l.register_number || 'N/A',
+                    department: std?.department || l.department || 'Engineering',
+                    hostel_block: std?.hostel_block || l.hostel_block || '',
+                    room_number: std?.room_number || l.room_number || '',
+                    parent_name: par?.full_name || l.parent_name || 'Parent',
+                    parent_phone: par?.phone_number || l.emergency_contact || l.parent_phone || 'N/A'
+                };
+            });
         } catch (err) {
             console.error('getAllLeaves exception:', err);
             return [];
@@ -315,7 +360,7 @@
                 .select(`
                     *,
                     students (
-                        id, register_number, full_name, department, year, section, hostel_status, room_number, parent_id
+                        id, register_number, full_name, department, year, section, hostel_status, hostel_block, room_number, parent_id
                     )
                 `)
                 .eq('id', leaveId)
@@ -366,10 +411,10 @@
                             current_stage: 'completed'
                         },
                         approvals: [
-                            { approver_role: 'parent', action: 'approved', remarks: 'Parent Verified via SMS OTP (Phone: +91 9003497761)' },
-                            { approver_role: 'advisor', action: 'approved', remarks: 'Class Advisor Approved: Attendance satisfactory.' },
-                            { approver_role: 'hod', action: 'approved', remarks: 'HOD Authorized: Outpass approved.' },
-                            { approver_role: 'warden', action: 'approved', remarks: 'Warden Cleared: Digital Hostel Outpass issued.' }
+                            { approver_role: 'parent', action: 'approved', remarks: 'Parent Verified via SMS OTP (Phone: +91 9003497761) [Code: 849201]', action_timestamp: new Date(Date.now() - 3600000).toISOString() },
+                            { approver_role: 'advisor', action: 'approved', remarks: 'Class Advisor Approved: Attendance satisfactory and genuine reason.', action_timestamp: new Date(Date.now() - 2400000).toISOString() },
+                            { approver_role: 'hod', action: 'approved', remarks: 'HOD Authorized: Forwarded to Warden for hostel outpass issuance.', action_timestamp: new Date(Date.now() - 1200000).toISOString() },
+                            { approver_role: 'warden', action: 'approved', remarks: 'Warden Cleared: Digital Hostel Outpass issued. Permitted to exit via Main Gate.', action_timestamp: new Date().toISOString() }
                         ],
                         voice_verification: null
                     };
@@ -384,35 +429,32 @@
                 parent = par && par.length > 0 ? par[0] : null;
             }
             if (!parent && leave.students?.register_number) {
-                const { data: parByReg } = await sb.from('parents').select('*').eq('student_reg_no', leave.students.register_number).limit(1);
+                const { data: parByReg } = await sb.from('parents').select('*').eq('student_reg_no', leave.students.register_number.trim().toUpperCase()).limit(1);
                 parent = parByReg && parByReg.length > 0 ? parByReg[0] : null;
             }
 
-            // Fetch approvals
+            // Fetch actual approvals audit trail from approvals table
             const { data: approvals } = await sb.from('approvals').select('*').eq('leave_id', leaveId).order('id', { ascending: true });
 
-            // Fetch voice verification
+            // Fetch voice verification if any
             const { data: voiceVerifs } = await sb.from('voice_verifications').select('*').eq('leave_id', leaveId).limit(1);
 
             return {
                 leave: {
                     ...leave,
-                    student_name: leave.students?.full_name || 'Rahul Sharma',
-                    register_number: leave.students?.register_number || '21CS101',
-                    department: leave.students?.department || 'Computer Science and Engineering',
-                    year: leave.students?.year || 3,
-                    section: leave.students?.section || 'A',
-                    hostel_status: leave.students?.hostel_status || 'hosteller',
-                    parent_name: parent?.full_name || 'Saranya Devi',
-                    parent_phone: parent?.phone_number || leave.emergency_contact || '9003497761',
+                    student_name: leave.students?.full_name || leave.student_name || 'Student',
+                    register_number: leave.students?.register_number || leave.register_number || 'N/A',
+                    department: leave.students?.department || leave.department || 'Engineering',
+                    year: leave.students?.year || leave.year || 3,
+                    section: leave.students?.section || leave.section || 'A',
+                    hostel_status: leave.students?.hostel_status || leave.hostel_status || 'day_scholar',
+                    hostel_block: leave.students?.hostel_block || leave.hostel_block || '',
+                    room_number: leave.students?.room_number || leave.room_number || '',
+                    parent_name: parent?.full_name || leave.parent_name || 'Parent / Guardian',
+                    parent_phone: parent?.phone_number || leave.emergency_contact || leave.parent_phone || 'N/A',
                     preferred_language: parent?.preferred_language || 'ta'
                 },
-                approvals: (approvals && approvals.length > 0) ? approvals : [
-                    { approver_role: 'parent', action: 'approved', remarks: 'Parent Verified via SMS OTP' },
-                    { approver_role: 'advisor', action: 'approved', remarks: 'Class Advisor Approved' },
-                    { approver_role: 'hod', action: 'approved', remarks: 'HOD Authorized' },
-                    { approver_role: 'warden', action: 'approved', remarks: 'Warden Cleared' }
-                ],
+                approvals: (approvals && approvals.length > 0) ? approvals : [],
                 voice_verification: voiceVerifs && voiceVerifs.length > 0 ? voiceVerifs[0] : null
             };
         } catch (err) {
@@ -447,10 +489,10 @@
                         current_stage: 'completed'
                     },
                     approvals: [
-                        { approver_role: 'parent', action: 'approved', remarks: 'Parent Verified via SMS OTP (Phone: +91 9003497761)' },
-                        { approver_role: 'advisor', action: 'approved', remarks: 'Class Advisor Approved: Attendance satisfactory.' },
-                        { approver_role: 'hod', action: 'approved', remarks: 'HOD Authorized: Outpass approved.' },
-                        { approver_role: 'warden', action: 'approved', remarks: 'Warden Cleared: Digital Hostel Outpass issued.' }
+                        { approver_role: 'parent', action: 'approved', remarks: 'Parent Verified via SMS OTP (Phone: +91 9003497761) [Code: 849201]', action_timestamp: new Date(Date.now() - 3600000).toISOString() },
+                        { approver_role: 'advisor', action: 'approved', remarks: 'Class Advisor Approved: Attendance satisfactory and genuine reason.', action_timestamp: new Date(Date.now() - 2400000).toISOString() },
+                        { approver_role: 'hod', action: 'approved', remarks: 'HOD Authorized: Forwarded to Warden for hostel outpass issuance.', action_timestamp: new Date(Date.now() - 1200000).toISOString() },
+                        { approver_role: 'warden', action: 'approved', remarks: 'Warden Cleared: Digital Hostel Outpass issued. Permitted to exit via Main Gate.', action_timestamp: new Date().toISOString() }
                     ],
                     voice_verification: null
                 };
@@ -641,23 +683,76 @@
                 phone = phoneNum;
             }
 
-            // 1. Insert into users table
-            const { data: userData, error: uErr } = await sb
-                .from('users')
-                .insert([{
-                    username: username,
+            // Check if user or profile already exists (Handles case where table row was deleted in Supabase)
+            let existingUser = null;
+            const { data: uFound } = await sb.from('users').select('*').or(`username.eq.${username},email.eq.${email}`).limit(1);
+            if (uFound && uFound.length > 0) {
+                existingUser = uFound[0];
+            }
+
+            let existingProfile = null;
+            if (role === 'student') {
+                const { data: sFound } = await sb.from('students').select('*').eq('register_number', regNo).limit(1);
+                if (sFound && sFound.length > 0) existingProfile = sFound[0];
+            } else if (role === 'parent') {
+                const { data: pFound } = await sb.from('parents').select('*').eq('phone_number', phoneNum).limit(1);
+                if (pFound && pFound.length > 0) existingProfile = pFound[0];
+            } else if (['advisor', 'hod', 'warden'].includes(role)) {
+                const { data: fFound } = await sb.from('faculty').select('*').eq('faculty_id', facultyId).limit(1);
+                if (fFound && fFound.length > 0) existingProfile = fFound[0];
+            }
+
+            // If BOTH user and profile exist, it is a genuine active account
+            if (existingUser && existingProfile) {
+                if (role === 'student') {
+                    return { success: false, message: `Student Register Number "${regNo}" is already registered! Please <a href="login.html" style="text-decoration:underline; font-weight:700; color:inherit;">Sign In here</a>.` };
+                } else if (role === 'parent') {
+                    return { success: false, message: `Parent phone "${phoneNum}" is already registered! Please <a href="login.html" style="text-decoration:underline; font-weight:700; color:inherit;">Sign In here</a>.` };
+                } else {
+                    return { success: false, message: `Faculty ID "${facultyId}" is already registered! Please <a href="login.html" style="text-decoration:underline; font-weight:700; color:inherit;">Sign In here</a>.` };
+                }
+            }
+
+            // 1. Insert or Update users table
+            let newUser = existingUser;
+            if (!newUser) {
+                const { data: userData, error: uErr } = await sb
+                    .from('users')
+                    .insert([{
+                        username: username,
+                        email: email,
+                        phone: phone,
+                        password_hash: '$2y$10$aJtXH9KqktnGf1mq/3K.R.zxsBFlQB8lg7QmxwnVE3AEYTu6dPVi.', // password123 hash
+                        role: role
+                    }])
+                    .select();
+
+                if (uErr) {
+                    // If insert failed due to duplicate key, fetch the existing record to reuse
+                    if (uErr.code === '23505' || (uErr.message || '').includes('duplicate key')) {
+                        const { data: recheck } = await sb.from('users').select('*').eq('username', username).limit(1);
+                        if (recheck && recheck.length > 0) {
+                            newUser = recheck[0];
+                        } else {
+                            throw uErr;
+                        }
+                    } else {
+                        throw uErr;
+                    }
+                } else {
+                    newUser = userData[0];
+                }
+            } else {
+                // If user row exists but profile was deleted in Supabase, update user metadata
+                await sb.from('users').update({
+                    role: role,
                     email: email,
-                    phone: phone,
-                    password_hash: '$2y$10$aJtXH9KqktnGf1mq/3K.R.zxsBFlQB8lg7QmxwnVE3AEYTu6dPVi.', // password123 hash
-                    role: role
-                }])
-                .select();
+                    phone: phone
+                }).eq('id', newUser.id);
+            }
 
-            if (uErr) throw uErr;
-            const newUser = userData[0];
-
-            // 2. Insert Profile
-            let profile = null;
+            // 2. Insert or Update Profile
+            let profile = existingProfile;
             if (role === 'student') {
                 let parentId = null;
                 const { data: pExist } = await sb.from('parents').select('id, full_name, phone_number').eq('student_reg_no', regNo).limit(1);
@@ -680,66 +775,97 @@
                     else if (u.includes('CIR') || u.includes('CIVIL')) deptVal = 'Civil Engineering';
                 }
 
-                const { data: stdData, error: sErr } = await sb
-                    .from('students')
-                    .insert([{
-                        user_id: newUser.id,
-                        register_number: regNo,
-                        full_name: formValues.full_name,
-                        department: deptVal,
-                        year: parseInt(formValues.year || '3', 10),
-                        section: formValues.section || 'A',
-                        hostel_status: formValues.hostel_status || 'hosteller',
-                        hostel_block: hostelBlock,
-                        room_number: roomNumber,
-                        parent_id: parentId
-                    }])
-                    .select();
-                if (sErr) throw sErr;
-                profile = stdData[0];
+                if (!profile) {
+                    const { data: stdData, error: sErr } = await sb
+                        .from('students')
+                        .insert([{
+                            user_id: newUser.id,
+                            register_number: regNo,
+                            full_name: formValues.full_name,
+                            department: deptVal,
+                            year: parseInt(formValues.year || '3', 10),
+                            section: formValues.section || 'A',
+                            hostel_status: formValues.hostel_status || 'hosteller',
+                            hostel_block: hostelBlock,
+                            room_number: roomNumber,
+                            parent_id: parentId
+                        }])
+                        .select();
+                    if (sErr) throw sErr;
+                    profile = stdData[0];
+                }
                 if (pExist && pExist[0]) {
                     profile.parent_name = pExist[0].full_name;
                     profile.parent_phone = pExist[0].phone_number;
                 }
             } else if (role === 'parent') {
                 const childReg = (formValues.student_reg_no || '').trim();
-                const { data: pData, error: pErr } = await sb
-                    .from('parents')
-                    .insert([{
-                        user_id: newUser.id,
-                        full_name: formValues.full_name,
-                        phone_number: phoneNum,
-                        student_reg_no: childReg || '21CS101',
-                        preferred_language: formValues.preferred_language || 'ta'
-                    }])
-                    .select();
-                if (pErr) throw pErr;
-                profile = pData[0];
+                if (!profile) {
+                    const { data: pData, error: pErr } = await sb
+                        .from('parents')
+                        .insert([{
+                            user_id: newUser.id,
+                            full_name: formValues.full_name,
+                            phone_number: phoneNum,
+                            student_reg_no: childReg || '21CS101',
+                            preferred_language: formValues.preferred_language || 'ta'
+                        }])
+                        .select();
+                    if (pErr) throw pErr;
+                    profile = pData[0];
+                }
 
                 // Link this parent to the student if the student account already exists
                 if (childReg) {
                     await sb.from('students').update({ parent_id: profile.id }).eq('register_number', childReg);
                 }
             } else if (['advisor', 'hod', 'warden'].includes(role)) {
-                const section = formValues.section_handled || formValues.assigned_section || 'A';
+                let assignedYr = null;
+                let assignedSec = null;
+
+                if (role === 'advisor') {
+                    if (formValues.assigned_year) {
+                        assignedYr = formValues.assigned_year === 'ALL' ? null : parseInt(formValues.assigned_year, 10);
+                    } else if (formValues.year_handled) {
+                        assignedYr = parseInt(formValues.year_handled, 10);
+                    }
+
+                    if (formValues.assigned_section) {
+                        assignedSec = formValues.assigned_section.toUpperCase().trim();
+                    } else if (formValues.section_handled) {
+                        const secStr = formValues.section_handled.trim().toUpperCase();
+                        const match = secStr.match(/(?:YEAR\s*)?(\d)[\s\-_]*(?:SEC(?:TION)?)?[\s\-_]*([A-Z])/i);
+                        if (match) {
+                            if (!assignedYr) assignedYr = parseInt(match[1], 10);
+                            assignedSec = match[2].toUpperCase();
+                        } else {
+                            assignedSec = secStr;
+                        }
+                    }
+                    if (!assignedSec) assignedSec = 'A';
+                    if (!assignedYr) assignedYr = 3;
+                }
+
                 const designation = role === 'hod' ? 'Head of Department' : (role === 'warden' ? 'Hostel Warden' : 'Class Advisor');
                 const hostelBlock = role === 'warden' ? (formValues.hostel_block || formValues.hostel_name || 'Dheeran Boys Hostel') : null;
 
-                const { data: fData, error: fErr } = await sb
-                    .from('faculty')
-                    .insert([{
-                        user_id: newUser.id,
-                        faculty_id: facultyId,
-                        full_name: formValues.full_name,
-                        department: formValues.department || (role === 'warden' ? 'Hostel Administration' : 'Engineering'),
-                        designation: designation,
-                        assigned_year: role === 'advisor' ? parseInt(formValues.year_handled || '3', 10) : null,
-                        assigned_section: role === 'advisor' ? section : null,
-                        hostel_block: hostelBlock
-                    }])
-                    .select();
-                if (fErr) throw fErr;
-                profile = fData[0];
+                if (!profile) {
+                    const { data: fData, error: fErr } = await sb
+                        .from('faculty')
+                        .insert([{
+                            user_id: newUser.id,
+                            faculty_id: facultyId,
+                            full_name: formValues.full_name,
+                            department: formValues.department || (role === 'warden' ? 'Hostel Administration' : 'Engineering'),
+                            designation: designation,
+                            assigned_year: assignedYr,
+                            assigned_section: assignedSec,
+                            hostel_block: hostelBlock
+                        }])
+                        .select();
+                    if (fErr) throw fErr;
+                    profile = fData[0];
+                }
             }
 
             const sessionUser = {
@@ -759,11 +885,11 @@
             let msg = err.message || 'Signup failed.';
             if (err.code === '23505' || msg.includes('users_username_key') || msg.includes('duplicate key') || msg.includes('already exists')) {
                 if (role === 'student') {
-                    msg = `Student Register Number "${formValues.register_number || formValues.username || ''}" is already registered! Please <a href="/login.html" style="text-decoration:underline; font-weight:700; color:inherit;">Sign In here</a>.`;
+                    msg = `Student Register Number "${formValues.register_number || formValues.username || ''}" is already registered! Please <a href="login.html" style="text-decoration:underline; font-weight:700; color:inherit;">Sign In here</a>.`;
                 } else if (role === 'parent') {
-                    msg = `Parent mobile number "${formValues.phone || ''}" is already registered! Please <a href="/login.html" style="text-decoration:underline; font-weight:700; color:inherit;">Sign In here</a>.`;
+                    msg = `Parent mobile number "${formValues.phone || ''}" is already registered! Please <a href="login.html" style="text-decoration:underline; font-weight:700; color:inherit;">Sign In here</a>.`;
                 } else {
-                    msg = `Faculty ID "${formValues.faculty_id || formValues.username || ''}" is already registered! Please <a href="/login.html" style="text-decoration:underline; font-weight:700; color:inherit;">Sign In here</a>.`;
+                    msg = `Faculty ID "${formValues.faculty_id || formValues.username || ''}" is already registered! Please <a href="login.html" style="text-decoration:underline; font-weight:700; color:inherit;">Sign In here</a>.`;
                 }
             }
             return { success: false, message: msg };

@@ -514,8 +514,8 @@
                 renderLeaveLetterModal(data);
 
                 const isPendingParent = data.leave?.status === 'Waiting for Parent' || data.leave?.current_stage === 'parent';
-                const stdName = data.student?.full_name || 'Ward';
-                const regNo = data.student?.register_number || '';
+                const stdName = data.leave?.student_name || data.leave?.students?.full_name || 'Ward';
+                const regNo = data.leave?.register_number || data.leave?.students?.register_number || '';
 
                 // Second Reject Option: Wire buttons in letterhead modal
                 const btnApprove = document.getElementById('btnLetterModalApprove');
