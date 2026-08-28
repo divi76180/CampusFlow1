@@ -159,20 +159,42 @@
 
         async function loadHodLeaves() {
             try {
-                const leaves = await CampusDB.getAllLeaves();
+                const allLeaves = await CampusDB.getAllLeaves() || [];
+                const prof = currentUser.profile || {};
+                const hodDept = (prof.department || '').toLowerCase().trim();
+
+                // Filter leaves belonging strictly to this HOD's department
+                const leaves = allLeaves.filter(l => {
+                    const sDept = (l.students?.department || '').toLowerCase().trim();
+                    const sReg = (l.students?.register_number || '').toUpperCase().trim();
+
+                    if (!hodDept) return true;
+                    if (hodDept.includes('computer') || hodDept.includes('cse') || hodDept.includes('cs')) {
+                        return sDept.includes('computer') || sDept.includes('cse') || sReg.includes('CS');
+                    } else if (hodDept.includes('information') || hodDept.includes('it')) {
+                        return sDept.includes('information') || sDept.includes('it') || sReg.includes('IT');
+                    } else if (hodDept.includes('electronics') || hodDept.includes('ece')) {
+                        return sDept.includes('electronics') || sDept.includes('ece') || sReg.includes('EC');
+                    } else if (hodDept.includes('mechanical') || hodDept.includes('mech')) {
+                        return sDept.includes('mechanical') || sDept.includes('mech') || sReg.includes('ME');
+                    } else if (hodDept.includes('civil')) {
+                        return sDept.includes('civil') || sReg.includes('CI') || sReg.includes('CE');
+                    }
+                    return sDept.includes(hodDept) || hodDept.includes(sDept);
+                });
+
                 const tbody = document.getElementById('hodTableBody');
                 if (!tbody) return;
 
-                const allLeaves = leaves || [];
                 const totalEl = document.getElementById('hodStatTotal');
-                if (totalEl) totalEl.textContent = allLeaves.length;
+                if (totalEl) totalEl.textContent = leaves.length;
                 const readyEl = document.getElementById('hodStatReady');
-                if (readyEl) readyEl.textContent = allLeaves.filter(l => l.status === 'Advisor Approved (Waiting for HOD)' || l.current_stage === 'hod').length;
+                if (readyEl) readyEl.textContent = leaves.filter(l => l.status === 'Advisor Approved (Waiting for HOD)' || l.current_stage === 'hod').length;
                 const completedEl = document.getElementById('hodStatCompleted');
-                if (completedEl) completedEl.textContent = allLeaves.filter(l => (l.status || '').toLowerCase().includes('completed') || (l.status || '').includes('Waiting for Warden')).length;
+                if (completedEl) completedEl.textContent = leaves.filter(l => (l.status || '').toLowerCase().includes('completed') || (l.status || '').includes('Waiting for Warden')).length;
 
                 if (!leaves || leaves.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:3rem; color:#94a3b8;">No leave requests found in Supabase.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:3rem; color:#94a3b8;">No leave requests found for Department of ${escapeHtml(prof.department || 'your department')}.</td></tr>`;
                     return;
                 }
 

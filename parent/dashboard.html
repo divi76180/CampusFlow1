@@ -405,18 +405,18 @@
         async function loadParentLeaves() {
             try {
                 const allLeaves = await CampusDB.getAllLeaves();
-                const childReg = currentUser?.profile?.student_reg_no || '';
+                const childReg = (currentUser?.profile?.student_reg_no || '').trim().toUpperCase();
+                const parentPhone = (activeParentPhone || currentUser.phone || currentUser.username || '').replace(/\D/g, '');
                 const parentId = currentUser?.profile?.id;
 
                 let leaves = (allLeaves || []).filter(l => {
-                    if (childReg && l.students?.register_number === childReg) return true;
-                    if (parentId && (l.students?.parent_id === parentId || l.student_id === parentId)) return true;
+                    const sReg = (l.students?.register_number || '').trim().toUpperCase();
+                    if (childReg && sReg && (sReg === childReg || sReg.includes(childReg) || childReg.includes(sReg))) return true;
+                    if (parentId && (l.students?.parent_id === parentId)) return true;
+                    const emPhone = (l.emergency_contact || l.parent_phone || '').replace(/\D/g, '');
+                    if (parentPhone && emPhone && (emPhone.includes(parentPhone) || parentPhone.includes(emPhone))) return true;
                     return false;
                 });
-
-                if (leaves.length === 0) {
-                    leaves = allLeaves || [];
-                }
 
                 // Update Stat Counts
                 const totalEl = document.getElementById('parentStatTotal');
@@ -430,7 +430,7 @@
                 if (!tbody) return;
 
                 if (leaves.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:3rem; color:#94a3b8;">No leave applications found for your ward.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:3rem; color:#94a3b8;">No leave applications found for your ward (${escapeHtml(childReg || '21CS101')}).</td></tr>`;
                     return;
                 }
 

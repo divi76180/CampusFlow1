@@ -120,7 +120,13 @@ function renderLetterhead(leave) {
             </div>
 
             <div class="letterhead-body">
-                <p><strong>To,</strong><br>The Head of the Department / Class Advisor,<br>CampusFlow College of Engineering & Technology.</p>
+                <p><strong>To,</strong><br>
+                   • <strong>Parent / Guardian:</strong> ${escapeHtml(leave.parent_name || 'Parent')} (+91 ${escapeHtml(leave.parent_phone || leave.emergency_contact || 'Registered Mobile')})<br>
+                   • <strong>Class Advisor:</strong> Class Advisor (${escapeHtml(dept)} - Year ${yr}, Sec ${sec})<br>
+                   • <strong>Head of Department:</strong> Department of ${escapeHtml(dept)}<br>
+                   ${hostelSt === 'hosteller' ? `• <strong>Hostel Warden:</strong> ${escapeHtml(leave.hostel_block || leave.students?.hostel_block || 'Hostel Block In-Charge')}<br>` : ''}
+                   <em>CampusFlow College of Engineering &amp; Technology</em>
+                </p>
                 <br>
                 <p><strong>Respected Sir / Madam,</strong></p>
                 <p>

@@ -159,20 +159,58 @@
 
         async function loadAdvisorLeaves() {
             try {
-                const leaves = await CampusDB.getAllLeaves();
+                const allLeaves = await CampusDB.getAllLeaves() || [];
+                const prof = currentUser.profile || {};
+                const advDept = (prof.department || '').toLowerCase().trim();
+                const advYear = prof.assigned_year ? parseInt(prof.assigned_year, 10) : null;
+                const advSec = (prof.assigned_section || '').toUpperCase().trim();
+
+                // Filter leaves belonging strictly to this Advisor's assigned department, year & section
+                const leaves = allLeaves.filter(l => {
+                    const sDept = (l.students?.department || '').toLowerCase().trim();
+                    const sReg = (l.students?.register_number || '').toUpperCase().trim();
+                    const sYear = parseInt(l.students?.year || '3', 10);
+                    const sSec = (l.students?.section || 'A').toUpperCase().trim();
+
+                    // Department match
+                    let deptMatch = true;
+                    if (advDept) {
+                        if (advDept.includes('computer') || advDept.includes('cse') || advDept.includes('cs')) {
+                            deptMatch = sDept.includes('computer') || sDept.includes('cse') || sReg.includes('CS');
+                        } else if (advDept.includes('information') || advDept.includes('it')) {
+                            deptMatch = sDept.includes('information') || sDept.includes('it') || sReg.includes('IT');
+                        } else if (advDept.includes('electronics') || advDept.includes('ece')) {
+                            deptMatch = sDept.includes('electronics') || sDept.includes('ece') || sReg.includes('EC');
+                        } else if (advDept.includes('mechanical') || advDept.includes('mech')) {
+                            deptMatch = sDept.includes('mechanical') || sDept.includes('mech') || sReg.includes('ME');
+                        } else if (advDept.includes('civil')) {
+                            deptMatch = sDept.includes('civil') || sReg.includes('CI') || sReg.includes('CE');
+                        } else {
+                            deptMatch = sDept.includes(advDept) || advDept.includes(sDept);
+                        }
+                    }
+
+                    // Year & Section match
+                    let classMatch = true;
+                    if (advYear && sYear && sYear !== advYear) classMatch = false;
+                    if (advSec && advSec !== 'ALL' && sSec && sSec !== advSec) classMatch = false;
+
+                    return deptMatch && classMatch;
+                });
+
                 const tbody = document.getElementById('advisorTableBody');
                 if (!tbody) return;
 
-                const allLeaves = leaves || [];
                 const totalEl = document.getElementById('advStatTotal');
-                if (totalEl) totalEl.textContent = allLeaves.length;
+                if (totalEl) totalEl.textContent = leaves.length;
                 const readyEl = document.getElementById('advStatReady');
-                if (readyEl) readyEl.textContent = allLeaves.filter(l => l.status === 'Parent Approved (Waiting for Advisor)' || l.current_stage === 'advisor').length;
+                if (readyEl) readyEl.textContent = leaves.filter(l => l.status === 'Parent Approved (Waiting for Advisor)' || l.current_stage === 'advisor').length;
                 const pendingEl = document.getElementById('advStatPending');
-                if (pendingEl) pendingEl.textContent = allLeaves.filter(l => l.status === 'Waiting for Parent' || l.current_stage === 'parent').length;
+                if (pendingEl) pendingEl.textContent = leaves.filter(l => l.status === 'Waiting for Parent' || l.current_stage === 'parent').length;
 
                 if (!leaves || leaves.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:3rem; color:#94a3b8;">No student leave applications found in Supabase.</td></tr>`;
+                    const classLabel = `${prof.department || 'Department'} (Year ${advYear || 3}-${advSec || 'A'})`;
+                    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:3rem; color:#94a3b8;">No student leave applications found for your assigned class: ${escapeHtml(classLabel)}.</td></tr>`;
                     return;
                 }
 

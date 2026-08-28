@@ -180,14 +180,19 @@
 
                 // Filter hostellers matching this specific warden's hostel block (or all hostellers if general warden)
                 const leaves = (allLeaves || []).filter(l => {
-                    const isHosteller = l.students?.hostel_status === 'hosteller';
-                    if (!isHosteller) return false;
+                    const isHosteller = (l.students?.hostel_status || l.hostel_status || '').toLowerCase() === 'hosteller';
+                    if (!isHosteller) return false; // Day scholars skip warden
 
-                    if (wardenHostel) {
-                        const stdHostel = (l.students?.hostel_block || '').toLowerCase().trim();
-                        const stdRoom = (l.students?.room_number || '').toLowerCase().trim();
+                    if (wardenHostel && !wardenHostel.includes('chief') && !wardenHostel.includes('all')) {
+                        const stdHostel = (l.students?.hostel_block || l.hostel_block || '').toLowerCase().trim();
                         if (stdHostel) {
-                            return stdHostel.includes(wardenHostel) || wardenHostel.includes(stdHostel);
+                            return stdHostel.includes(wardenHostel) || wardenHostel.includes(stdHostel) ||
+                                   (wardenHostel.includes('dheeran') && stdHostel.includes('dheeran')) ||
+                                   (wardenHostel.includes('ponnar') && stdHostel.includes('ponnar')) ||
+                                   (wardenHostel.includes('valluvar') && stdHostel.includes('valluvar')) ||
+                                   (wardenHostel.includes('bhavani') && stdHostel.includes('bhavani')) ||
+                                   (wardenHostel.includes('kaveri') && stdHostel.includes('kaveri')) ||
+                                   (wardenHostel.includes('amaravathi') && stdHostel.includes('amaravathi'));
                         }
                     }
                     return true;
