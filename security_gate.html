@@ -76,6 +76,15 @@
                 <button type="button" class="btn btn-primary" onclick="verifyOutpass()">Verify Outpass →</button>
             </div>
 
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('passIdInput').value='1'; verifyOutpass();" style="font-size:0.78rem; background:#f1f5f9; color:#0f172a; border:1px solid #cbd5e1; font-weight:600;">
+                    ⚡ Check Approved Demo Outpass #1
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('passIdInput').value='2'; verifyOutpass();" style="font-size:0.78rem; background:#f1f5f9; color:#0f172a; border:1px solid #cbd5e1; font-weight:600;">
+                    ⚡ Check Pending Demo Leave #2
+                </button>
+            </div>
+
             <div id="scanResultContainer"></div>
         </div>
     </main>

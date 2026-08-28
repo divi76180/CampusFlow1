@@ -65,39 +65,44 @@
                 </button>
             </form>
 
-            <!-- Quick Demo Accounts One-Click Tester Tray -->
+            <!-- 1. Gate Scanner Access Terminal (Placed BEFORE Quick Demo Test) -->
+            <div class="gate-scanner-card">
+                <div class="gate-scanner-info">
+                    <div class="gate-scanner-icon">🛡️</div>
+                    <div class="gate-scanner-text">
+                        <h3>Campus Gate Security Scanner</h3>
+                        <p>Verify Hosteller Digital Outpass QR Codes at Campus Gate</p>
+                    </div>
+                </div>
+                <a href="security_gate.html" class="gate-scanner-btn" id="gateScannerBtn">
+                    Launch Scanner ↗
+                </a>
+            </div>
+
+            <!-- 2. Quick Test Demo Accounts One-Click Tester Tray -->
             <div class="demo-accounts-tray">
                 <div class="demo-title">
-                    ⚡ Quick Test Demo Accounts (Click to autofill)
+                    ⚡ Quick Test Demo Accounts (One Complete Set • Click to autofill)
                 </div>
                 <div class="demo-pills">
-                    <button type="button" class="demo-pill" onclick="quickFill('21CS101', 'password123', 'student')">
-                        🎓 Rahul (Hosteller Student)
+                    <button type="button" class="demo-pill" onclick="quickFill('21CS101', 'password123', 'student')" title="CSE Year 3 Hosteller - Rahul Sharma">
+                        <span class="demo-badge">1</span> 🎓 Student (Rahul • 21CS101)
                     </button>
-                    <button type="button" class="demo-pill" onclick="quickFill('21CS102', 'password123', 'student')">
-                        🎓 Priya (Day Scholar Student)
+                    <button type="button" class="demo-pill" onclick="quickFill('9003497761', 'password123', 'parent')" title="Parent of 21CS101 - Saranya Devi">
+                        <span class="demo-badge">2</span> 👨‍👩‍👧 Parent (Saranya • 9003497761)
                     </button>
-                    <button type="button" class="demo-pill" onclick="quickFill('9003497761', 'password123', 'parent')">
-                        👨‍👩‍👧 Saranya (Parent - 9003497761)
+                    <button type="button" class="demo-pill" onclick="quickFill('FAC-CS-01', 'password123', 'advisor')" title="Class Advisor CSE 3-A - Dr. Ramanathan">
+                        <span class="demo-badge">3</span> 📋 Advisor (Dr. Ramanathan • FAC-CS-01)
                     </button>
-                    <button type="button" class="demo-pill" onclick="quickFill('9876543210', 'password123', 'parent')">
-                        👨‍👩‍👧 Suresh (Parent 1 - 9876543210)
+                    <button type="button" class="demo-pill" onclick="quickFill('HOD-CSE-01', 'password123', 'hod')" title="HOD Computer Science - Dr. Meenakshi">
+                        <span class="demo-badge">4</span> 🏛️ HOD (Dr. Meenakshi • HOD-CSE-01)
                     </button>
-                    <button type="button" class="demo-pill" onclick="quickFill('9876543220', 'password123', 'parent')">
-                        👨‍👩‍👧 Ramesh (Parent 2 - 9876543220)
+                    <button type="button" class="demo-pill" onclick="quickFill('WARDEN-BH-01', 'password123', 'warden')" title="Hostel Warden Dheeran Boys Hostel - Col. Balaji">
+                        <span class="demo-badge">5</span> 🏢 Warden (Col. Balaji • WARDEN-BH-01)
                     </button>
-                    <button type="button" class="demo-pill" onclick="quickFill('FAC-CS-01', 'password123', 'advisor')">
-                        📋 Dr. Ramanathan (Advisor)
-                    </button>
-                    <button type="button" class="demo-pill" onclick="quickFill('HOD-CSE-01', 'password123', 'hod')">
-                        🏛️ Dr. Meenakshi (HOD)
-                    </button>
-                    <button type="button" class="demo-pill" onclick="quickFill('WARDEN-BH-01', 'password123', 'warden')">
-                        🏢 Col. Balaji (Warden)
-                    </button>
-                    <a href="security_gate.html" class="demo-pill" style="background:#0f172a; color:#38bdf8; border:1px solid #0284c7; text-decoration:none; display:inline-flex; align-items:center; gap:4px; font-weight:700;">
-                        🛡️ Gate Scanner (Terminal) ↗
-                    </a>
+                </div>
+                <div style="font-size: 0.73rem; color: #64748b; margin-top: 0.65rem; text-align: center;">
+                    🔑 Universal Demo Password: <strong style="color:#0f172a;">password123</strong> (Complete 5-stage leave approval sequence)
                 </div>
             </div>
         </div>
