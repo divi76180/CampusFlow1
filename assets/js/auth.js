@@ -200,14 +200,14 @@ function renderSignupFormFields(role, container) {
                 </div>
             </div>
             <div class="form-row">
-                <div class="form-group">
+                <div class="form-group" style="grid-column: span 2;">
                     <label class="form-label">Department *</label>
                     <select name="department" id="signupDepartmentSelect" class="form-control form-select" required>
                         <option value="Information Technology">Information Technology (IT)</option>
-                        <option value="Computer Science and Engineering">Computer Science and Engineering (CSE)</option>
-                        <option value="Artificial Intelligence and Data Science">Artificial Intelligence & Data Science (AI & DS)</option>
-                        <option value="Electronics and Communication">Electronics & Communication (ECE)</option>
-                        <option value="Electrical and Electronics Engineering">Electrical & Electronics (EEE)</option>
+                        <option value="Computer Science and Engineering" selected>Computer Science and Engineering (CSE)</option>
+                        <option value="Artificial Intelligence and Data Science">Artificial Intelligence &amp; Data Science (AI &amp; DS)</option>
+                        <option value="Electronics and Communication">Electronics &amp; Communication (ECE)</option>
+                        <option value="Electrical and Electronics Engineering">Electrical &amp; Electronics (EEE)</option>
                         <option value="Mechanical Engineering">Mechanical Engineering (MECH)</option>
                         <option value="Civil Engineering">Civil Engineering (CIVIL)</option>
                         <option value="Mechatronics Engineering">Mechatronics Engineering (MTS)</option>
@@ -215,21 +215,25 @@ function renderSignupFormFields(role, container) {
                         <option value="Chemical Engineering">Chemical Engineering (CHEM)</option>
                     </select>
                 </div>
+            </div>
+            <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label">Year & Section *</label>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-                        <select name="year" class="form-control form-select" required>
-                            <option value="1">Year 1</option>
-                            <option value="2">Year 2</option>
-                            <option value="3" selected>Year 3</option>
-                            <option value="4">Year 4</option>
-                        </select>
-                        <select name="section" class="form-control form-select" required>
-                            <option value="A" selected>Section A</option>
-                            <option value="B">Section B</option>
-                            <option value="C">Section C</option>
-                        </select>
-                    </div>
+                    <label class="form-label">Academic Year *</label>
+                    <select name="year" class="form-control form-select" required>
+                        <option value="1">1st Year (Year 1)</option>
+                        <option value="2">2nd Year (Year 2)</option>
+                        <option value="3" selected>3rd Year (Year 3)</option>
+                        <option value="4">4th Year (Year 4)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Class Section *</label>
+                    <select name="section" class="form-control form-select" required>
+                        <option value="A" selected>Section A</option>
+                        <option value="B">Section B</option>
+                        <option value="C">Section C</option>
+                        <option value="D">Section D</option>
+                    </select>
                 </div>
             </div>
             <div class="form-row">
@@ -337,7 +341,7 @@ function renderSignupFormFields(role, container) {
                 </div>
             </div>
             <div class="form-row">
-                <div class="form-group">
+                <div class="form-group" style="grid-column: span 2;">
                     <label class="form-label">Department *</label>
                     <select name="department" class="form-control form-select" required>
                         <option value="Information Technology">Information Technology (IT)</option>
@@ -352,23 +356,27 @@ function renderSignupFormFields(role, container) {
                         <option value="Chemical Engineering">Chemical Engineering (CHEM)</option>
                     </select>
                 </div>
+            </div>
+            <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label">Assigned Year &amp; Section *</label>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-                        <select name="assigned_year" class="form-control form-select" required>
-                            <option value="1">Year 1</option>
-                            <option value="2">Year 2</option>
-                            <option value="3" selected>Year 3</option>
-                            <option value="4">Year 4</option>
-                            <option value="ALL">All Years</option>
-                        </select>
-                        <select name="assigned_section" class="form-control form-select" required>
-                            <option value="A" selected>Section A</option>
-                            <option value="B">Section B</option>
-                            <option value="C">Section C</option>
-                            <option value="ALL">All Sections</option>
-                        </select>
-                    </div>
+                    <label class="form-label">Assigned Year *</label>
+                    <select name="assigned_year" class="form-control form-select" required>
+                        <option value="1">1st Year (Year 1)</option>
+                        <option value="2">2nd Year (Year 2)</option>
+                        <option value="3" selected>3rd Year (Year 3)</option>
+                        <option value="4">4th Year (Year 4)</option>
+                        <option value="ALL">All Years (Department-wide)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Assigned Section *</label>
+                    <select name="assigned_section" class="form-control form-select" required>
+                        <option value="A" selected>Section A</option>
+                        <option value="B">Section B</option>
+                        <option value="C">Section C</option>
+                        <option value="D">Section D</option>
+                        <option value="ALL">All Sections (Entire Year)</option>
+                    </select>
                 </div>
             </div>
         `;
